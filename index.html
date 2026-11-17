@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
+    <meta name="color-scheme" content="light" />
+    <meta name="theme-color" content="#f2efe8" />
+    <meta
+      name="description"
+      content="casaTopView — desenhe a planta da sua casa em vista de cima e arraste móveis, portas e janelas."
+    />
+    <link
+      rel="icon"
+      href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%230f766e'/%3E%3Cpath d='M6 10h20v12H6z' fill='none' stroke='%23fff' stroke-width='2.4'/%3E%3Cpath d='M16 10v12M6 18h6' stroke='%23fff' stroke-width='2.4'/%3E%3C/svg%3E"
+    />
+    <title>casaTopView — plantas baixas</title>
+  </head>
+  <body>
+    <div id="app"></div>
+    <script type="module" src="/src/main.ts"></script>
+    <script>
+      // Só aparece quando este arquivo-fonte é aberto direto pelo disco. No
+      // build autocontido o script de /src/main.ts não existe mais, então o
+      // aviso não aparece e o app ocupa a tela inteira.
+      if (location.protocol === 'file:' && document.querySelector('script[src="/src/main.ts"]')) {
+        document.getElementById('app').innerHTML =
+          '<div style="max-width:620px;margin:12vh auto;padding:28px 30px;border:1px solid #e5dfd2;border-radius:14px;background:#fffdf8;font-family:Inter,Segoe UI,system-ui,sans-serif;color:#1f242b;line-height:1.55">' +
+          '<h1 style="margin:0 0 10px;font-size:20px">casaTopView precisa ser servido</h1>' +
+          '<p style="margin:0 0 16px;color:#59616d">Este <code>index.html</code> é a entrada de desenvolvimento do Vite e não pode ser aberto diretamente pelo disco.</p>' +
+          '<p style="margin:0 0 8px"><b>Desenvolvimento:</b> rode <code>npm run dev</code> e abra <code>http://localhost:5173</code>.</p>' +
+          '<p style="margin:0 0 18px"><b>Uso offline:</b> rode <code>npm run build</code> e abra <code>dist/index.html</code> (arquivo autocontido).</p>' +
+          '<a href="dist/index.html" style="display:inline-block;padding:9px 14px;border-radius:8px;background:#0f766e;color:#fff;text-decoration:none;font-weight:600">Abrir a versão compilada</a>' +
+          '</div>';
+      }
+    </script>
+  </body>
+</html>

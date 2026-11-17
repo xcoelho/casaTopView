@@ -1,0 +1,8 @@
+node_modules/
+dist/
+.freebuff/
+*.rar
+*.log
+
+# artefatos locais de inspeção
+inspect-moveis-final.png

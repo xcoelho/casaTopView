@@ -1,0 +1,396 @@
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#app {
+  height: 100%;
+  margin: 0;
+}
+
+body {
+  font-family: var(--font);
+  font-size: 13px;
+  color: var(--ink);
+  background: var(--paper);
+  overflow: hidden;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+  color: inherit;
+}
+
+.app {
+  --left-w: 300px;
+  --right-w: 296px;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background: var(--paper);
+}
+
+.app.no-left {
+  --left-w: 0px;
+}
+
+.app.no-right {
+  --right-w: 0px;
+}
+
+.app.no-left .panel-left,
+.app.no-right .panel-right {
+  display: none;
+}
+
+/* ---------- Topbar ---------- */
+
+.topbar {
+  position: relative;
+  z-index: 30;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  height: var(--topbar-h);
+  flex: 0 0 auto;
+  padding: 0 12px 0 14px;
+  background: var(--surface);
+  border-bottom: 1px solid var(--line);
+  box-shadow: 0 1px 0 rgba(31, 36, 43, 0.02);
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding-right: 4px;
+  user-select: none;
+}
+
+.brand-mark {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 9px;
+  background: linear-gradient(160deg, #12877d, #0b5d57);
+  color: #fff;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.25), var(--shadow-xs);
+}
+
+.brand-name {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.05;
+}
+
+.brand-name b {
+  font-size: 14.5px;
+  letter-spacing: -0.015em;
+  font-weight: 650;
+}
+
+.brand-name span {
+  font-size: 10.5px;
+  letter-spacing: 0.03em;
+  color: var(--ink-faint);
+}
+
+.topbar-sep {
+  width: 1px;
+  height: 26px;
+  background: var(--line);
+}
+
+.topbar-spacer {
+  flex: 1 1 auto;
+}
+
+.tool-group {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 3px;
+  border-radius: 11px;
+  background: var(--panel-2);
+  border: 1px solid var(--line);
+}
+
+.topbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.project-chip {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  max-width: 230px;
+  padding: 6px 10px;
+  border-radius: 9px;
+  border: 1px solid var(--line);
+  background: var(--surface);
+  color: var(--ink-soft);
+  cursor: pointer;
+  transition: border-color 120ms ease, background 120ms ease;
+}
+
+.project-chip:hover {
+  border-color: var(--line-strong);
+  background: var(--panel-2);
+}
+
+.project-chip b {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: 550;
+  color: var(--ink);
+}
+
+/* ---------- Workspace ---------- */
+
+.workspace {
+  display: grid;
+  grid-template-columns: var(--left-w) minmax(0, 1fr) var(--right-w);
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+.panel {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  background: var(--panel);
+  overflow: hidden;
+}
+
+.panel-left {
+  border-right: 1px solid var(--line);
+}
+
+.panel-right {
+  border-left: 1px solid var(--line);
+}
+
+.panel-head {
+  flex: 0 0 auto;
+  padding: 12px 14px 10px;
+  border-bottom: 1px solid var(--line);
+  background: var(--panel);
+}
+
+.panel-title {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 9px;
+}
+
+.panel-title h2 {
+  margin: 0;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+}
+
+.panel-scroll {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.stage {
+  position: relative;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+  background: var(--paper);
+}
+
+.stage canvas.plan {
+  position: absolute;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+  touch-action: none;
+  cursor: default;
+}
+
+.stage-ui {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.stage-ui > * {
+  pointer-events: auto;
+}
+
+.stage-corner {
+  position: absolute;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px;
+  border-radius: 11px;
+  background: rgba(255, 253, 248, 0.94);
+  border: 1px solid var(--line);
+  box-shadow: var(--shadow-sm);
+  backdrop-filter: blur(6px);
+}
+
+.stage-corner.bottom-right {
+  right: 14px;
+  bottom: 14px;
+}
+
+.stage-corner.bottom-left {
+  left: 14px;
+  bottom: 14px;
+  padding: 6px 10px;
+  gap: 10px;
+  font-size: 11px;
+  color: var(--ink-soft);
+}
+
+.stage-corner.top-left {
+  left: 14px;
+  top: 14px;
+  padding: 5px 6px;
+}
+
+/* ---------- Status bar ---------- */
+
+.statusbar {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  height: var(--statusbar-h);
+  flex: 0 0 auto;
+  padding: 0 14px;
+  font-size: 11.5px;
+  color: var(--ink-soft);
+  background: var(--surface);
+  border-top: 1px solid var(--line);
+}
+
+.statusbar .hint {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.statusbar .hint b {
+  color: var(--ink);
+  font-weight: 600;
+}
+
+.statusbar .status-item {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  white-space: nowrap;
+}
+
+.statusbar kbd {
+  font-family: var(--mono);
+  font-size: 10px;
+  padding: 1px 5px;
+  border-radius: 4px;
+  border: 1px solid var(--line-strong);
+  border-bottom-width: 2px;
+  background: var(--surface);
+  color: var(--ink-soft);
+}
+
+.save-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--accent);
+  transition: background 200ms ease;
+}
+
+.save-dot.pending {
+  background: #d9a13b;
+}
+
+.status-toggle {
+  border: 0;
+  background: transparent;
+  padding: 3px 6px;
+  border-radius: 5px;
+  font-size: 11px;
+  color: var(--ink-faint);
+  cursor: pointer;
+  font-weight: 550;
+}
+
+.status-toggle.on {
+  color: var(--accent-ink);
+  background: var(--accent-soft);
+}
+
+/* ---------- Responsivo ---------- */
+
+@media (max-width: 1180px) {
+  .app {
+    --left-w: 254px;
+    --right-w: 252px;
+  }
+}
+
+@media (max-width: 950px) {
+  .app {
+    --right-w: 0px;
+  }
+
+  .app .panel-right {
+    display: none;
+  }
+
+  .app.show-right {
+    --right-w: 268px;
+  }
+
+  .app.show-right .panel-right {
+    display: flex;
+  }
+}
+
+@media (max-width: 720px) {
+  .app {
+    --left-w: 0px;
+  }
+
+  .app .panel-left {
+    display: none;
+  }
+
+  .app.show-left {
+    --left-w: 240px;
+  }
+
+  .app.show-left .panel-left {
+    display: flex;
+  }
+
+  .brand-name span {
+    display: none;
+  }
+}

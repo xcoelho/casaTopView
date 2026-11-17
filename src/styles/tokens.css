@@ -1,0 +1,46 @@
+:root {
+  color-scheme: light;
+
+  /* Papel e superfícies */
+  --paper: #f1eee6;
+  --paper-deep: #e6e1d5;
+  --surface: #fffdf8;
+  --surface-2: #fbf8f1;
+  --panel: #faf7f0;
+  --panel-2: #f4f0e6;
+  --panel-3: #ece7da;
+
+  /* Tinta */
+  --ink: #1f242b;
+  --ink-soft: #59616d;
+  --ink-faint: #8c94a0;
+
+  /* Linhas */
+  --line: #e5dfd2;
+  --line-strong: #d3ccbd;
+
+  /* Destaque */
+  --accent: #0f766e;
+  --accent-ink: #0a5a54;
+  --accent-soft: #d7efe9;
+  --accent-line: #9ed3c9;
+  --guide: #d93b73;
+  --danger: #b1382c;
+  --danger-soft: #f8e4e0;
+
+  /* Sombras */
+  --shadow-xs: 0 1px 1px rgba(31, 36, 43, 0.05);
+  --shadow-sm: 0 1px 2px rgba(31, 36, 43, 0.07), 0 1px 1px rgba(31, 36, 43, 0.04);
+  --shadow-md: 0 8px 20px rgba(31, 36, 43, 0.09), 0 2px 6px rgba(31, 36, 43, 0.05);
+  --shadow-lg: 0 28px 60px rgba(24, 28, 34, 0.22);
+
+  --radius-sm: 7px;
+  --radius: 10px;
+  --radius-lg: 14px;
+
+  --font: 'Inter', 'Segoe UI', system-ui, -apple-system, 'Helvetica Neue', Arial, sans-serif;
+  --mono: 'Cascadia Mono', 'SFMono-Regular', Consolas, 'Liberation Mono', monospace;
+
+  --topbar-h: 56px;
+  --statusbar-h: 32px;
+}

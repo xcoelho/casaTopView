@@ -1,0 +1,22 @@
+{
+  "name": "casatopview",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "description": "Editor de plantas baixas em vista de cima",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build && node scripts/inline-dist.mjs",
+    "build:web": "tsc --noEmit && vite build",
+    "preview": "vite preview",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@types/three": "^0.187.0",
+    "typescript": "^5.6.3",
+    "vite": "^6.0.7"
+  },
+  "dependencies": {
+    "three": "^0.187.0"
+  }
+}
