@@ -28,7 +28,7 @@ textarea {
 }
 
 .app {
-  --left-w: 300px;
+  --left-w: 390px;
   --right-w: 296px;
   display: flex;
   flex-direction: column;
@@ -208,6 +208,7 @@ textarea {
   flex: 1 1 auto;
   min-height: 0;
   overflow-y: auto;
+  overflow-x: hidden;
   overscroll-behavior: contain;
 }
 
@@ -350,7 +351,7 @@ textarea {
 
 @media (max-width: 1180px) {
   .app {
-    --left-w: 254px;
+    --left-w: 330px;
     --right-w: 252px;
   }
 }
@@ -383,7 +384,7 @@ textarea {
   }
 
   .app.show-left {
-    --left-w: 240px;
+    --left-w: 312px;
   }
 
   .app.show-left .panel-left {

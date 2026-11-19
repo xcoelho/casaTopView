@@ -20,7 +20,28 @@ export interface Wall {
   a: Vec2;
   b: Vec2;
   thickness: number;
+  /** cor da parede no 3D; ausente usa o acabamento padrão */
+  color?: string;
 }
+
+/** Acabamento padrão das paredes. */
+export const DEFAULT_WALL_COLOR = '#f1ede3';
+
+export interface WallColor {
+  name: string;
+  value: string;
+}
+
+/** Cores de parede oferecidas no inspetor. */
+export const WALL_COLORS: WallColor[] = [
+  { name: 'Branco gelo', value: DEFAULT_WALL_COLOR },
+  { name: 'Branco', value: '#f4f1ea' },
+  { name: 'Off-white', value: '#e6e0d3' },
+  { name: 'Cinza claro', value: '#c9ccce' },
+  { name: 'Bege', value: '#dcd2c1' },
+  { name: 'Verde-sálvia', value: '#9aa992' },
+  { name: 'Areia', value: '#d8bb92' },
+];
 
 export interface Opening {
   id: Id;
@@ -222,6 +243,7 @@ export function normalizePlan(raw: unknown): Plan {
             a: { x: Number(w.a.x) || 0, y: Number(w.a.y) || 0 },
             b: { x: Number(w.b.x) || 0, y: Number(w.b.y) || 0 },
             thickness: Number(w.thickness) || base.settings.wallThickness,
+            color: typeof w.color === 'string' && w.color ? w.color : undefined,
           }))
       : [],
     openings: [],

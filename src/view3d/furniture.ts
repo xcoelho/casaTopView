@@ -43,6 +43,9 @@ const CATEGORY_HEIGHT: Record<CategoryId, number> = {
 /** [altura, base] em cm para itens que fogem do padrão da categoria. */
 const ITEM_HEIGHT: Record<string, [number, number?]> = {
   tapete: [2],
+  'tapete-redondo': [2],
+  'tapete-listrado': [2],
+  'tapete-peludo': [2],
   piscina: [10],
   espelho: [72, 108],
   quadro: [80, 140],
@@ -61,6 +64,8 @@ const ITEM_HEIGHT: Record<string, [number, number?]> = {
   'cadeira-escritorio': [112],
   banqueta: [66],
   'cama-solteiro': [52],
+  'beliche-simples': [165, 0],
+  'beliche-escritorio': [165, 0],
   'cama-casal': [52],
   'cama-king': [52],
   berco: [88],
@@ -108,6 +113,20 @@ const ITEM_HEIGHT: Record<string, [number, number?]> = {
   'cesto-roupas': [58],
   'ilha-closet': [92],
   'arara-roupas': [170],
+  'closet-aberto-pequeno': [212],
+  'closet-aberto-medio': [212],
+  'closet-aberto-grande': [212],
+  'cadeira-concha': [82],
+  'cadeira-executiva': [128],
+  'rack-painel-grande': [185],
+  'rack-medio': [64],
+  'lavatorio-suspenso-quadrado': [56, 34],
+  'lavatorio-suspenso-redondo': [62, 28],
+  'espelho-quadrado-led': [90, 112],
+  'espelho-redondo-pendente': [72, 128],
+  'enfeite-peixes': [42, 140],
+  'enfeite-circulos': [112, 108],
+  'divisoria-plantas': [190],
   trocador: [95],
   'poltrona-amamentacao': [100],
   gaveteiro: [62],
@@ -321,6 +340,198 @@ function stool(g: G, p: Palette): void {
   const ring = (r - 8) * 1.41;
   torusAt(g, ring, 0.9, 0, 0, 20, metal, 'metal');
   torusAt(g, ring, 0.9, 0, 0, 44, metal, 'metal');
+}
+
+/** Cadeira concha com pés palito de madeira, inspirada na referência. */
+function shellChair(g: G, p: Palette): void {
+  const { w, d, h, main, accent } = p;
+  const a = w / 2;
+  const b = d / 2;
+  for (const sx of [-1, 1]) {
+    for (const sz of [-1, 1]) {
+      coneAt(g, 1.7, 2.3, 45, sx * (a - 5), sz * (b - 5), 0, accent, 1, 'wood', 10);
+    }
+  }
+  roundedBoxAt(g, w - 6, d - 6, 7, 0, 0, 44, shade(main, 0.1), 3, 'matte');
+  roundedBoxAt(g, w, 4, h - 45, 0, -b + 2, 45, main, 2, 'matte');
+  for (const sx of [-1, 1]) {
+    roundedBoxAt(g, 4, d - 8, h - 52, sx * (a - 2), 0, 48, main, 2, 'matte');
+  }
+  boxAt(g, w - 22, 1.6, h - 62, 0, 1, 52, shade(main, 0.22), 0.5, 0, 'matte');
+  boxAt(g, w - 26, 1.6, h - 62, -2, 1, 52, shade(main, 0.22), 0.35, 0, 'matte');
+  boxAt(g, w - 26, 1.6, h - 62, 2, 1, 52, shade(main, 0.22), 0.35, 0, 'matte');
+}
+
+/** Cadeira executiva alta com apoio de pés e base de 5 rodízios. */
+function executiveChair(g: G, p: Palette): void {
+  const { w, d, main, accent } = p;
+  const r = Math.min(w, d) / 2 - 4;
+  for (let i = 0; i < 5; i++) {
+    const ang = (i / 5) * Math.PI * 2;
+    boxAt(g, r, 3.4, 2.6, (Math.cos(ang) * r) / 2, (Math.sin(ang) * r) / 2, 5, accent, 1, -ang, 'metal');
+    sphereAt(g, 2.6, Math.cos(ang) * r, 3, Math.sin(ang) * r, DARK_METAL, [1, 1, 1], 'metal');
+  }
+  cylinderAt(g, 4.2, 30, 0, 0, 5, CHROME, 1, 'chrome');
+  roundedBoxAt(g, w - 10, d - 14, 10, 0, 0, 34, main, 3.5, 'fabric');
+  roundedBoxAt(g, w - 14, 8, 52, 0, -d * 0.36, 44, main, 3.5, 'fabric', 1, 0, -0.1);
+  roundedBoxAt(g, w - 22, 6, 14, 0, -d * 0.32, 56, shade(main, 0.08), 2.5, 'fabric');
+  for (const sx of [-1, 1]) {
+    boxAt(g, 3.2, 9, 14, sx * (w / 2 - 4), -d * 0.08, 30, accent, 1, 0, 'metal');
+    roundedBoxAt(g, 5.5, 20, 3.5, sx * (w / 2 - 4), -d * 0.06, 44, accent, 1.5, 'metal');
+  }
+  boxAt(g, w - 24, 4, 3, 0, d * 0.3, 22, accent, 1, 0, 'metal');
+  roundedBoxAt(g, w - 24, 12, 4, 0, d * 0.36, 25, shade(main, -0.05), 1.6, 'fabric');
+}
+
+/** Rack com painel ripado e bancada suspensa, como na referência de hack. */
+function mediaWall(g: G, p: Palette, large: boolean): void {
+  const { w, d, h, main, accent } = p;
+  const plinth = 8;
+  const panelH = large ? 150 : 0;
+  if (large) {
+    boxAt(g, w, 3, panelH, 0, -d / 2 + 1.5, 24, main, 1, 0, 'wood');
+    const slats = Math.max(8, Math.round(w / 12));
+    for (let i = 0; i < slats; i++) {
+      const x = -w / 2 + 6 + (i * (w - 12)) / Math.max(slats - 1, 1);
+      boxAt(g, 2.4, 1.2, panelH - 8, x, -d / 2 + 2.4, 28, shade(main, -0.14), 1, 0, 'wood');
+    }
+    boxAt(g, w * 0.34, 22, 3, w * 0.2, -d / 2 + 4, 128, shade(accent, -0.02), 1, 0, 'wood');
+  }
+  const bodyH = large ? 46 : h - plinth - 4;
+  const baseY = large ? 24 : plinth;
+  if (!large) {
+    for (const sx of [-1, 1]) {
+      for (const sz of [-1, 1]) {
+        coneAt(g, 1.8, 1.2, plinth, sx * (w / 2 - 10), sz * (d / 2 - 8), 0, shade(main, -0.3), 1, 'wood', 10);
+      }
+    }
+  }
+  roundedBoxAt(g, w, d, bodyH - 6, 0, 0, baseY + 3, large ? accent : main, 1.4, large ? 'paint' : 'wood');
+  roundedBoxAt(g, w + 2, d + 1, 3.4, 0, 0, baseY + bodyH - 1, shade(large ? accent : main, 0.05), 1, large ? 'paint' : 'wood');
+  const mid = 0;
+  const nicheW = Math.min(52, w * 0.26);
+  boxAt(g, 2.4, d - 8, bodyH - 14, mid - nicheW / 2, 0, baseY + 6, shade(large ? accent : main, -0.15), 1, 0, large ? 'paint' : 'wood');
+  boxAt(g, 2.4, d - 8, bodyH - 14, mid + nicheW / 2, 0, baseY + 6, shade(large ? accent : main, -0.15), 1, 0, large ? 'paint' : 'wood');
+  boxAt(g, nicheW - 10, d * 0.4, 5, mid, 0, baseY + 8, '#2b2f34', 1, 0, 'metal');
+  boxAt(g, w - 30, d - 12, 2.2, -w / 4, 0, baseY + 6, shade(large ? accent : main, -0.08), 1, 0, large ? 'paint' : 'wood');
+}
+
+/** Closet aberto com módulos de cabide, dobrados e gavetas, por tamanho. */
+function openCloset(g: G, p: Palette, cols: number): void {
+  const { w, d, h, main, accent } = p;
+  const t = 3;
+  const cw = (w - t * (cols + 1)) / cols;
+  boxAt(g, w, d, t, 0, 0, 0, shade(main, -0.1), 1, 0, 'paint');
+  boxAt(g, w, d, t, 0, 0, h - t, shade(main, 0.04), 1, 0, 'paint');
+  boxAt(g, w, 1.6, h, 0, -d / 2 + 0.8, 0, shade(main, -0.18), 1, 0, 'paint');
+  for (let i = 0; i <= cols; i++) {
+    const x = -w / 2 + t / 2 + i * (cw + t);
+    boxAt(g, t, d, h, x, 0, 0, main, 1, 0, 'paint');
+  }
+  const cloth = [accent, shade(accent, -0.16), shade(accent, 0.14), '#8f9a76'];
+  for (let c = 0; c < cols; c++) {
+    const x0 = -w / 2 + t + c * (cw + t);
+    const cx = x0 + cw / 2;
+    boxAt(g, cw - 8, 2, 2, cx, 0, h - 34, DARK_METAL, 1, 0, 'metal');
+    const n = 4;
+    const pieceW = (cw - 16) / n;
+    for (let i = 0; i < n; i++) {
+      const bx = x0 + 8 + i * pieceW;
+      boxAt(g, pieceW - 2, 1.6, h * 0.22, bx + pieceW / 2, 0, h - 38 - h * 0.22, cloth[(c + i) % cloth.length], 1, 0, 'fabric');
+    }
+    boxAt(g, cw - 8, d - 8, 2.4, cx, 0, h * 0.52, shade(main, -0.06), 1, 0, 'paint');
+    boxAt(g, cw - 16, d - 14, 14, cx, 0, h * 0.3, shade(accent, 0.06), 1, 0, 'fabric');
+    boxAt(g, cw - 16, d - 14, 14, cx, 0, h * 0.16, shade(accent, -0.04), 1, 0, 'fabric');
+    boxAt(g, cw * 0.4, 2, 2, cx, d / 2 - 1, h * 0.36, DARK_METAL, 1, 0, 'metal');
+  }
+}
+
+/** Lavatório suspenso com cuba de apoio e prateleira inferior. */
+function floatingVanity(g: G, p: Palette, square: boolean): void {
+  const { w, d, h, main, accent, metal } = p;
+  const topY = 34;
+  roundedBoxAt(g, w, d, 5, 0, 0, topY, main, 1, 'stone');
+  boxAt(g, w - 14, d - 14, 22, 0, 0, topY - 22, shade(main, -0.14), 1, 0, 'stone');
+  boxAt(g, w - 14, d - 20, 2.4, 0, -2, topY - 23.5, shade(main, -0.2), 1, 0, 'stone');
+  if (square) {
+    boxAt(g, 36, 26, 13, 0, 1, topY + 5, accent, 1, 0, 'ceramic');
+    boxAt(g, 30, 20, 2, 0, 1, topY + 14, shade(accent, 0.2), 1, 0, 'ceramic');
+  } else {
+    latheAt(g, [[0, 0], [15, 0], [17, 4], [17, 11], [15, 13], [13, 11], [13, 4], [0, 3]], 0, 1, topY + 5, PORCELAIN, 'ceramic', 30, 1, 0.78);
+  }
+  faucet(g, 0, -d * 0.3, topY + 5, metal, 17, 11);
+  boxAt(g, Math.min(w * 0.2, 18), 8, 2, -w / 2 + 14, 2, topY - 14, shade(accent, 0.05), 1, 0, 'fabric');
+}
+
+/** Espelho quadrado iluminado com moldura de LED. */
+function ledMirror(g: G, p: Palette): void {
+  const { w, h } = p;
+  boxAt(g, w, 2, h, 0, 0, 0, '#fff3cf', 1, 0, 'emissive');
+  boxAt(g, w - 6, 1.2, h - 6, 0, 0.6, 3, '#cfe3e8', 1, 0, 'screen');
+  boxAt(g, w - 14, 0.6, h * 0.6, -w * 0.1, 1.2, h * 0.24, '#ffffff', 0.4, 0, 'screen');
+}
+
+/** Espelho redondo com alça de couro, como na referência. */
+function strapMirror(g: G, p: Palette): void {
+  const { h, main, accent } = p;
+  const r = Math.min(31, h * 0.24);
+  boxAt(g, 3, 3, 26, 0, 0, h - 8, accent, 1, 0, 'matte');
+  torusAt(g, r, 1.8, 0, 0, h - r - 18, accent, 'matte', 0, 0);
+  const glass = cylinderAt(g, r - 1.4, 1, 0, 0, h - r - 18.6, main, 1, 'screen');
+  glass.rotation.x = Math.PI / 2;
+}
+
+/** Enfeites de parede: peixes de madeira e círculos de metal. */
+function wallFish(g: G, p: Palette): void {
+  const { w, h, main } = p;
+  const sizes = [44, 30, 34];
+  for (let i = 0; i < 3; i++) {
+    const x = -w / 2 + w * (0.28 + i * 0.22);
+    const y = h * (0.5 + (i % 2 ? 0.14 : -0.06));
+    const len = sizes[i];
+    const fish = sphereAt(g, len / 2, x, y, 1.6, main, [1, 0.22, 0.12], 'wood');
+    fish.rotation.z = i === 1 ? Math.PI : 0;
+    coneAt(g, 4, 1.4, 7, x + (i === 1 ? -len / 2 : len / 2), y, 0, shade(main, -0.1), 1, 'wood', 12);
+  }
+}
+
+function wallCircles(g: G, p: Palette): void {
+  const { w, h, main } = p;
+  for (const fx of [-0.22, 0.22]) {
+    const x = w * fx;
+    boxAt(g, 2.2, 1.6, h * 0.9, x, 0, h * 0.05, main, 1, 0, 'metal');
+    torusAt(g, h * 0.16, 1.8, x, 0, h * 0.42, main, 'metal', 0, 0);
+    torusAt(g, h * 0.1, 1.5, x, 0, h * 0.62, main, 'metal', 0, 0);
+  }
+  boxAt(g, 9, 1.4, 1.4, -w * 0.22, 0, h * 0.78, main, 1, 0, 'metal');
+}
+
+/** Divisória vazada de metal com vasos e orquídeas. */
+function plantDivider(g: G, p: Palette): void {
+  const { w, d, h, main, accent } = p;
+  const cols = 4;
+  const cw = w / cols;
+  for (const sx of [-1, 1]) {
+    boxAt(g, 3, d, h, sx * (w / 2 - 1.5), 0, 0, main, 1, 0, 'metal');
+  }
+  boxAt(g, w, d, 3, 0, 0, 0, main, 1, 0, 'metal');
+  boxAt(g, w, d, 3, 0, 0, h - 3, main, 1, 0, 'metal');
+  for (let i = 1; i < cols; i++) {
+    boxAt(g, 2.4, d, h, -w / 2 + cw * i, 0, 0, main, 1, 0, 'metal');
+  }
+  const rows = 3;
+  for (let r = 0; r < rows; r++) {
+    const y = 24 + (r * (h - 60)) / Math.max(rows - 1, 1);
+    for (let c = 0; c < cols; c++) {
+      if ((r + c) % 2 === 0) continue;
+      const x = -w / 2 + cw * (c + 0.5);
+      boxAt(g, cw - 10, d - 6, 2.4, x, 0, y, main, 1, 0, 'metal');
+      cylinderAt(g, 5.5, 10, x, 0, y + 2.4, '#8a6142', 1, 'ceramic');
+      sphereAt(g, 5, x, y + 16, 0, accent, [1, 0.75, 1], 'foliage');
+      sphereAt(g, 3.4, x + 4, y + 19, 2, '#f1efe8', [1, 0.9, 1], 'foliage');
+      sphereAt(g, 3, x - 4, y + 18, -2, shade(accent, 0.14), [1, 0.85, 1], 'foliage');
+    }
+  }
 }
 
 function table(g: G, p: Palette): void {
@@ -1055,6 +1266,95 @@ function appliance(g: G, p: Palette, dryer: boolean): void {
   boxAt(g, 12, 0.8, 3, -w / 2 + 14, d / 2 + 2.1, h - 20, '#8fd3c2', 1, 0, 'emissive');
 }
 
+function rugRound(g: G, p: Palette): void {
+  const { w, d, main, accent } = p;
+  const r = Math.min(w, d) / 2;
+  latheAt(g, [[0, 0], [r - 1.5, 0], [r, 1.2], [r, 2], [0, 2]], 0, 0, 0, main, 'fabric', 44);
+  latheAt(g, [[0, 0], [r - 10, 0], [r - 9, 0.8], [r - 9, 2.2], [0, 2.2]], 0, 0, 0, accent, 'fabric', 44);
+  latheAt(g, [[0, 0], [r - 18, 0], [r - 17, 0.5], [r - 17, 2.4], [0, 2.4]], 0, 0, 0, shade(main, 0.06), 'fabric', 40);
+}
+
+function rugStriped(g: G, p: Palette): void {
+  const { w, d, main, accent } = p;
+  roundedBoxAt(g, w, d, 1.8, 0, 0, 0, main, 1.6, 'fabric');
+  const stripes = 7;
+  for (let i = 0; i < stripes; i++) {
+    const z = -d / 2 + 12 + (i * (d - 24)) / (stripes - 1);
+    boxAt(g, w - 8, i % 2 ? 4.5 : 2.2, 0.8, 0, z, 1.8, i % 2 ? accent : shade(accent, -0.2), 1, 0, 'fabric');
+  }
+  roundedBoxAt(g, w - 16, d - 16, 0.6, 0, 0, 1.8, shade(main, 0.04), 1, 'fabric');
+}
+
+function rugFluffy(g: G, p: Palette): void {
+  const { w, d, main, accent } = p;
+  roundedBoxAt(g, w, d, 3.2, 0, 0, 0, main, 4, 'fabric');
+  roundedBoxAt(g, w - 20, d - 20, 1.2, 0, 0, 3, accent, 3, 'fabric');
+  const tufts = 40;
+  for (let i = 0; i < tufts; i++) {
+    const x = -w / 2 + 10 + hash(i) * (w - 20);
+    const z = -d / 2 + 10 + hash(i + 50) * (d - 20);
+    sphereAt(g, 2.4 + hash(i + 20) * 2, x, 3.4, z, i % 2 ? accent : shade(main, 0.1), [1, 0.5, 1], 'fabric');
+  }
+}
+
+function bunkBed(g: G, p: Palette, desk: boolean): void {
+  const { w, d, main, accent, dark } = p;
+  const b = d / 2;
+  const post = 6;
+  // postes nos 4 cantos
+  for (const sx of [-1, 1]) {
+    for (const sz of [-1, 1]) {
+      roundedBoxAt(g, post, post, 165, sx * (w / 2 - post / 2), sz * (b - post / 2), 0, main, 1.2, 'wood');
+    }
+  }
+  // cabeceiras
+  for (const sz of [-1, 1]) {
+    roundedBoxAt(g, w, post, 34, 0, sz * (b - post / 2), 131, main, 1.2, 'wood');
+  }
+  // estrados, colchões e travesseiros por nível
+  const levels: Array<{ y: number; withMattress: boolean }> = desk
+    ? [{ y: 110, withMattress: true }]
+    : [
+        { y: 22, withMattress: true },
+        { y: 110, withMattress: true },
+      ];
+  for (const lvl of levels) {
+    roundedBoxAt(g, w - 4, d - 8, 10, 0, 0, lvl.y, main, 1.5, 'wood');
+    if (lvl.withMattress) {
+      roundedBoxAt(g, w - 10, d - 16, 18, 0, 0, lvl.y + 10, PORCELAIN, 4, 'fabric');
+      roundedBoxAt(g, w - 6, d * 0.52, 9, 0, b - d * 0.26, lvl.y + 25, accent, 3.5, 'fabric');
+      roundedBoxAt(g, w - 22, 28, 13, 0, -b + 26, lvl.y + 27, '#fffdf7', 5, 'fabric', 1, 0, -0.12);
+    }
+  }
+  // guarda-corpo superior
+  roundedBoxAt(g, w - 6, 3, 20, 0, b - post + 1, 126, main, 1, 'wood');
+  for (const sx of [-1, 1]) {
+    roundedBoxAt(g, 3, d - 20, 20, sx * (w / 2 - post + 1), 0, 126, main, 1, 'wood');
+  }
+  // escada lateral (belief: 5 degraus)
+  const steps = 5;
+  const stepW = 24;
+  const stepD = (d - 30) / steps;
+  for (let i = 0; i < steps; i++) {
+    const y = 18 + i * ((110 - 18) / (steps - 1));
+    const z = -b + 22 + (i + 0.5) * stepD;
+    roundedBoxAt(g, stepW, stepD - 3, 4, w / 2 + stepW / 2 - 4, z, y, dark, 1, 'wood');
+  }
+  for (const sz of [-1, 1]) {
+    roundedBoxAt(g, 3, d - 30, 4, w / 2 + stepW - 4, 0, 110, main, 1, 'wood');
+  }
+  if (desk) {
+    // escrivaninha embaixo: tampo + pés + gaveta
+    const deskY = 74;
+    roundedBoxAt(g, w - 10, d * 0.62, 4, 0, -b + 10 + d * 0.31, deskY, main, 1, 'wood');
+    for (const sx of [-1, 1]) {
+      roundedBoxAt(g, 4, d * 0.58, deskY, sx * (w / 2 - 8), -b + 10 + d * 0.29, 0, dark, 1, 'wood');
+    }
+    roundedBoxAt(g, 30, d * 0.5, 14, w / 2 - 24, -b + 8 + d * 0.25, 46, shade(main, -0.06), 1, 'wood');
+    boxAt(g, 18, 2, 2.4, w / 2 - 24, -b + 8 + d * 0.25 + d * 0.25 + 1, 52, accent, 1, 0, 'metal');
+  }
+}
+
 function rug(g: G, p: Palette): void {
   const { w, d, main, accent } = p;
 
@@ -1706,8 +2006,29 @@ export function buildFurniture(item: Item): THREE.Group {
     case 'cadeira-escritorio':
       officeChair(body, palette, item.colors.accent ?? '#b8bcc1');
       break;
+    case 'cadeira-executiva':
+      executiveChair(body, palette);
+      break;
+    case 'cadeira-concha':
+      shellChair(body, palette);
+      break;
     case 'banqueta':
       stool(body, palette);
+      break;
+    case 'rack-painel-grande':
+      mediaWall(body, palette, true);
+      break;
+    case 'rack-medio':
+      mediaWall(body, palette, false);
+      break;
+    case 'closet-aberto-pequeno':
+      openCloset(body, palette, 2);
+      break;
+    case 'closet-aberto-medio':
+      openCloset(body, palette, 3);
+      break;
+    case 'closet-aberto-grande':
+      openCloset(body, palette, 4);
       break;
     case 'mesa-jantar-4':
     case 'mesa-jantar-6':
@@ -1733,6 +2054,12 @@ export function buildFurniture(item: Item): THREE.Group {
     case 'cama-casal':
     case 'cama-king':
       bed(body, palette);
+      break;
+    case 'beliche-simples':
+      bunkBed(body, palette, false);
+      break;
+    case 'beliche-escritorio':
+      bunkBed(body, palette, true);
       break;
     case 'berco':
       crib(body, palette);
@@ -1813,6 +2140,18 @@ export function buildFurniture(item: Item): THREE.Group {
     case 'espelho':
       mirror(body, palette);
       break;
+    case 'espelho-quadrado-led':
+      ledMirror(body, palette);
+      break;
+    case 'espelho-redondo-pendente':
+      strapMirror(body, palette);
+      break;
+    case 'lavatorio-suspenso-quadrado':
+      floatingVanity(body, palette, true);
+      break;
+    case 'lavatorio-suspenso-redondo':
+      floatingVanity(body, palette, false);
+      break;
     case 'tv':
       tv(body, palette);
       break;
@@ -1827,6 +2166,15 @@ export function buildFurniture(item: Item): THREE.Group {
       break;
     case 'tapete':
       rug(body, palette);
+      break;
+    case 'tapete-redondo':
+      rugRound(body, palette);
+      break;
+    case 'tapete-listrado':
+      rugStriped(body, palette);
+      break;
+    case 'tapete-peludo':
+      rugFluffy(body, palette);
       break;
     case 'planta-vaso':
       plant(body, palette, 80);
@@ -1845,6 +2193,15 @@ export function buildFurniture(item: Item): THREE.Group {
       break;
     case 'lareira':
       fireplace(body, palette);
+      break;
+    case 'enfeite-peixes':
+      wallFish(body, palette);
+      break;
+    case 'enfeite-circulos':
+      wallCircles(body, palette);
+      break;
+    case 'divisoria-plantas':
+      plantDivider(body, palette);
       break;
     case 'piscina':
       pool(body, palette);

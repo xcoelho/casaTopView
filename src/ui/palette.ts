@@ -68,7 +68,7 @@ export function mountPalette(shell: Shell, deps: PaletteDeps): PaletteHandle {
   const foot = el(
     'div',
     { class: 'catalog-foot' },
-    'Arraste um item para a planta ou clique para inserir no centro da vista. Itens de parede se prendem sozinhos.',
+    'Arraste um item para a planta. Itens de parede se prendem sozinhos.',
   );
 
   shell.paletteScroll.append(grid, empty, foot);

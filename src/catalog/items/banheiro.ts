@@ -113,4 +113,99 @@ export const banheiro: FurnitureDef[] = [
       line(ctx, w * 0.55, d - 1, w * 0.7, 1, alpha('#ffffff', 0.6), 1.1);
     },
   },
+  {
+    id: 'lavatorio-suspenso-quadrado',
+    name: 'Lavatório suspenso quadrado',
+    category: 'banheiro',
+    w: 90,
+    d: 50,
+    keywords: ['lavatorio', 'pia', 'suspenso', 'quadrado', 'cuba preta', 'prateleira'],
+    colors: { main: '#eeeee9', accent: '#33373c', metal: '#b8bcc1' },
+    colorKeys: [
+      { key: 'main', label: 'Bancada', palette: 'stone' },
+      { key: 'accent', label: 'Cuba', palette: 'paint' },
+      { key: 'metal', label: 'Torneira', palette: 'metal' },
+    ],
+    draw: ({ ctx, w, d, colors }) => {
+      box(ctx, 0, 0, w, d, 4, colors.main, alpha('#5a5346', 0.35), 1.5);
+      box(ctx, 4, 4, w - 8, d - 8, 3, null, alpha('#ffffff', 0.35), 1);
+      box(ctx, w / 2 - 20, 10, 40, 24, 3, colors.accent, alpha('#14171b', 0.45), 1.4);
+      box(ctx, w / 2 - 16, 14, 32, 16, 2, shade(colors.accent, 0.15), null);
+      circle(ctx, w / 2, 6, 3.2, colors.metal, alpha('#4b5056', 0.4), 1.1);
+      line(ctx, w / 2, 7, w / 2, 12, colors.metal, 2.2);
+      box(ctx, 10, d - 12, w - 20, 6, 2, alpha(shade(colors.main, -0.12), 0.7), null);
+      box(ctx, w - 26, d - 9, 12, 3, 1.4, alpha(colors.accent, 0.5), null);
+    },
+  },
+  {
+    id: 'lavatorio-suspenso-redondo',
+    name: 'Lavatório suspenso redondo',
+    category: 'banheiro',
+    w: 90,
+    d: 52,
+    keywords: ['lavatorio', 'pia', 'suspenso', 'redondo', 'espelho', 'gabinete'],
+    colors: { main: '#3b3f45', accent: '#f7f7f4', metal: '#b8bcc1' },
+    colorKeys: [
+      { key: 'main', label: 'Gabinete', palette: 'paint' },
+      { key: 'accent', label: 'Louça', palette: 'paint' },
+      { key: 'metal', label: 'Torneira', palette: 'metal' },
+    ],
+    draw: ({ ctx, w, d, colors }) => {
+      box(ctx, 0, 0, w, d, 3, colors.main, alpha('#14171b', 0.45), 1.5);
+      line(ctx, 4, d * 0.55, w - 4, d * 0.55, alpha('#ffffff', 0.18), 1.2);
+      box(ctx, w / 2 - 24, 8, 48, 26, 10, colors.accent, alpha('#8d9498', 0.5), 1.5);
+      ctx.beginPath();
+      ctx.ellipse(w / 2, 21, 18, 9, 0, 0, Math.PI * 2);
+      ctx.fillStyle = '#fbfbf8';
+      ctx.fill();
+      ctx.strokeStyle = alpha('#8d9498', 0.4);
+      ctx.lineWidth = 1.2;
+      ctx.stroke();
+      circle(ctx, w / 2, 5, 3, colors.metal, alpha('#4b5056', 0.4), 1);
+      box(ctx, w / 2 - 14, d - 8, 28, 3, 1.2, alpha(colors.metal, 0.7), null);
+    },
+  },
+  {
+    id: 'espelho-quadrado-led',
+    name: 'Espelho quadrado com LED',
+    category: 'banheiro',
+    w: 80,
+    d: 7,
+    keywords: ['espelho', 'quadrado', 'led', 'banheiro', 'iluminado'],
+    flat: true,
+    zBias: 4,
+    colors: { main: '#cfe3e8', accent: '#fff3cf' },
+    colorKeys: [
+      { key: 'main', label: 'Reflexo', palette: 'glass' },
+      { key: 'accent', label: 'LED', palette: 'paint' },
+    ],
+    draw: ({ ctx, w, d, colors }) => {
+      box(ctx, 0, 0, w, d, 2, colors.accent, alpha('#c2a469', 0.6), 1.6);
+      box(ctx, 2.5, 1.5, w - 5, d - 3, 1.4, alpha(colors.main, 0.9), alpha('#6c7b80', 0.5), 1.2);
+      line(ctx, w * 0.3, d - 1.4, w * 0.45, 1.6, alpha('#ffffff', 0.9), 1.4);
+      line(ctx, w * 0.6, d - 1.4, w * 0.72, 1.6, alpha('#ffffff', 0.6), 1.1);
+    },
+  },
+  {
+    id: 'espelho-redondo-pendente',
+    name: 'Espelho redondo pendente',
+    category: 'banheiro',
+    w: 62,
+    d: 8,
+    keywords: ['espelho', 'redondo', 'pendente', 'banheiro', 'alca couro'],
+    flat: true,
+    zBias: 4,
+    colors: { main: '#cfe3e8', accent: '#3b3f45' },
+    colorKeys: [
+      { key: 'main', label: 'Reflexo', palette: 'glass' },
+      { key: 'accent', label: 'Alça', palette: 'paint' },
+    ],
+    draw: ({ ctx, w, d, colors }) => {
+      box(ctx, 0, 0, w, d, 2, alpha(colors.main, 0.85), alpha('#6c7b80', 0.5), 1.2);
+      circle(ctx, w / 2, d / 2, 2.2, colors.accent, null);
+      line(ctx, w * 0.3, d - 1, w * 0.44, 1, alpha('#ffffff', 0.85), 1.3);
+      line(ctx, w * 0.58, d - 1, w * 0.7, 1, alpha('#ffffff', 0.55), 1);
+      box(ctx, w / 2 - 7, 1, 14, d - 2, 1, colors.accent, null);
+    },
+  },
 ];

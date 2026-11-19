@@ -1,10 +1,10 @@
 /** Paredes com vãos, esquadrias, portas entreabertas e pisos dos cômodos. */
 import * as THREE from 'three';
 import type { Plan, Wall } from '../core/document';
-import { DEFAULT_DOOR_COLOR, wallParts } from '../core/document';
+import { DEFAULT_DOOR_COLOR, DEFAULT_WALL_COLOR, wallParts } from '../core/document';
 import { pointInPolygon } from '../core/geometry';
 import { shade } from '../catalog/draw';
-import { boxAt, floorSurface, roundedBoxAt } from './materials';
+import { boxAt, cylinderAt, floorSurface, roundedBoxAt, torusAt } from './materials';
 import {
   DOOR_HEIGHT,
   GARAGE_HEIGHT,
@@ -17,7 +17,7 @@ import {
 const DEG = Math.PI / 180;
 
 export { WALL_HEIGHT };
-const WALL_COLOR = '#f1ede3';
+const WALL_COLOR = DEFAULT_WALL_COLOR;
 const FRAME_COLOR = '#fbfaf6';
 const GLASS_COLOR = '#bfe3f2';
 const BASEBOARD_COLOR = '#fbfaf6';
@@ -70,6 +70,12 @@ function buildOpening(
     }
 
     const leaves = opening.kind === 'porta-dupla' ? 2 : 1;
+    // buildOpening só recebe Opening (sem defId), então a diferenciação é por
+    // faixa de width: porta-pivotante (100) puxador barra vertical; porta-vidro
+    // (85–100) folha em vidro com moldura de madeira e puxador barra curto.
+    // Existentes não atingem as faixas: porta-simples (80), porta-dupla (150, 2 folhas).
+    const isPivotante = leaves === 1 && width >= 100;
+    const isVidro = leaves === 1 && width >= 85 && width < 100;
     for (let i = 0; i < leaves; i++) {
       const atEnd = leaves === 2 ? i === 1 : opening.hinge === 'dir';
       const hingeDist = atEnd ? end : start;
@@ -84,19 +90,55 @@ function buildOpening(
       leaf.rotation.y = -angle + swing;
       group.add(leaf);
 
-      boxAt(leaf, leafWidth - 1, 4, DOOR_HEIGHT - 2, (side * leafWidth) / 2, 0, 1, doorColor, 1, 0, 'wood');
-      boxAt(leaf, 2, 6, 6, side * (leafWidth - 10), 0, 100, '#8a867d');
+      if (isVidro) {
+        const glassWidth = leafWidth - 10;
+        boxAt(leaf, glassWidth, 2, DOOR_HEIGHT - 12, (side * leafWidth) / 2, 0, 6, GLASS_COLOR, 0.5, 0, 'glass');
+        // Moldura de madeira nas bordas: 2 montantes + 2 travessas.
+        boxAt(leaf, 5, 5, DOOR_HEIGHT - 2, side * 2.5, 0, 1, doorColor, 1, 0, 'wood');
+        boxAt(leaf, 5, 5, DOOR_HEIGHT - 2, side * (leafWidth - 2.5), 0, 1, doorColor, 1, 0, 'wood');
+        boxAt(leaf, leafWidth - 1, 5, 6, (side * leafWidth) / 2, 0, 1, doorColor, 1, 0, 'wood');
+        boxAt(leaf, leafWidth - 1, 5, 6, (side * leafWidth) / 2, 0, DOOR_HEIGHT - 7, doorColor, 1, 0, 'wood');
+        // Puxador barra curto.
+        boxAt(leaf, 2, 4, 30, side * (leafWidth - 10), 0, 90, '#8a867d');
+      } else {
+        boxAt(leaf, leafWidth - 1, 4, DOOR_HEIGHT - 2, (side * leafWidth) / 2, 0, 1, doorColor, 1, 0, 'wood');
+        if (isPivotante) {
+          boxAt(leaf, 2.5, 3, 60, side * (leafWidth - 10), 0, 100, '#8a867d');
+        } else {
+          boxAt(leaf, 2, 6, 6, side * (leafWidth - 10), 0, 100, '#8a867d');
+        }
+      }
     }
     return;
   }
 
   // Janelas: vidro + esquadria branca
-  boxAt(frame, width - 8, 3, WINDOW_HEAD - WINDOW_SILL - 8, 0, 0, WINDOW_SILL + 4, GLASS_COLOR, 0.34);
-  boxAt(frame, width, Math.min(6, thickness), 6, 0, 0, WINDOW_SILL, FRAME_COLOR);
-  boxAt(frame, width, Math.min(6, thickness), 6, 0, 0, WINDOW_HEAD - 6, FRAME_COLOR);
-  boxAt(frame, 5, Math.min(6, thickness), WINDOW_HEAD - WINDOW_SILL, -width / 2 + 2.5, 0, WINDOW_SILL, FRAME_COLOR);
-  boxAt(frame, 5, Math.min(6, thickness), WINDOW_HEAD - WINDOW_SILL, width / 2 - 2.5, 0, WINDOW_SILL, FRAME_COLOR);
-  boxAt(frame, 3, Math.min(5, thickness), WINDOW_HEAD - WINDOW_SILL, 0, 0, WINDOW_SILL, FRAME_COLOR);
+  // Estreitas (banheiro): peitoril alto — vão curto e elevado.
+  const sill = width <= 90 ? 150 : WINDOW_SILL;
+  const head = WINDOW_HEAD;
+  // Óculo redondo: janelas muito estreitas usam vidro circular com aro.
+  if (width <= 75) {
+    const r = Math.max(width / 2 - 4, 6);
+    const centerY = (sill + head) / 2;
+    const glass = cylinderAt(frame, r, 3, 0, 0, centerY - 1.5, GLASS_COLOR, 0.34);
+    glass.rotation.x = Math.PI / 2;
+    torusAt(frame, r, 2, 0, 0, centerY, FRAME_COLOR, 'matte', 0);
+  } else {
+    boxAt(frame, width - 8, 3, head - sill - 8, 0, 0, sill + 4, GLASS_COLOR, 0.34);
+    boxAt(frame, width, Math.min(6, thickness), 6, 0, 0, sill, FRAME_COLOR);
+    boxAt(frame, width, Math.min(6, thickness), 6, 0, 0, head - 6, FRAME_COLOR);
+    boxAt(frame, 5, Math.min(6, thickness), head - sill, -width / 2 + 2.5, 0, sill, FRAME_COLOR);
+    boxAt(frame, 5, Math.min(6, thickness), head - sill, width / 2 - 2.5, 0, sill, FRAME_COLOR);
+    boxAt(frame, 3, Math.min(5, thickness), head - sill, 0, 0, sill, FRAME_COLOR);
+  }
+  // Janelas largas: cortinas laterais em tecido + varão.
+  if (width >= 150) {
+    const curtain = '#8a6a4f';
+    boxAt(frame, 14, 5, head - sill, -width / 2 + 7, 5, sill, curtain, 1, 0, 'matte');
+    boxAt(frame, 14, 5, head - sill, width / 2 - 7, 5, sill, curtain, 1, 0, 'matte');
+    const rod = cylinderAt(frame, 1.2, width + 12, 0, 5, head + 2, '#8a867d');
+    rod.rotation.z = Math.PI / 2;
+  }
 }
 
 export function buildWalls(plan: Plan): THREE.Group {
@@ -122,7 +164,7 @@ export function buildWalls(plan: Plan): THREE.Group {
       const dist = (start + end) / 2;
       const x = wall.a.x + ux * dist;
       const z = wall.a.y + uy * dist;
-      boxAt(group, end - start, thickness, height, x, z, base, WALL_COLOR, 1, -angle, 'wallPaint');
+      boxAt(group, end - start, thickness, height, x, z, base, wall.color ?? WALL_COLOR, 1, -angle, 'wallPaint');
     };
 
     /** O rodapé só existe no lado da parede que dá para um cômodo. */
@@ -188,7 +230,9 @@ export function buildWalls(plan: Plan): THREE.Group {
         const head = opening.kind === 'porta-garagem' ? GARAGE_HEIGHT : DOOR_HEIGHT;
         segment(start, end, head, WALL_HEIGHT - head);
       } else {
-        segment(start, end, 0, WINDOW_SILL);
+        const wWidth = end - start;
+        const sill = wWidth <= 90 ? 150 : WINDOW_SILL;
+        segment(start, end, 0, sill);
         segment(start, end, WINDOW_HEAD, WALL_HEIGHT - WINDOW_HEAD);
         baseboard(start, end);
       }

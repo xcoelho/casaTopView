@@ -222,4 +222,61 @@ export const armarios: FurnitureDef[] = [
       box(ctx, w / 3 + 8, d / 2 + 5, w / 3 - 16, d / 2 - 10, 1.4, alpha(colors.accent, 0.35), null);
     },
   },
+  {
+    id: 'rack-painel-grande',
+    name: 'Rack com painel grande',
+    category: 'armarios',
+    w: 220,
+    d: 48,
+    keywords: ['rack', 'painel', 'ripado', 'tv', 'sala', 'hack'],
+    colors: { main: '#c19a6b', accent: '#efeae1' },
+    colorKeys: [
+      { key: 'main', label: 'Madeira', palette: 'wood' },
+      { key: 'accent', label: 'Rack', palette: 'paint' },
+    ],
+    draw: ({ ctx, w, d, colors }) => {
+      box(ctx, 0, 0, w, d, 3, colors.main, alpha('#2c2014', 0.42), 1.5);
+      for (let x = 6; x < w - 4; x += 8) {
+        line(ctx, x, 3, x, d - 3, alpha('#2c2014', 0.28), 1.4);
+      }
+      box(ctx, 4, d * 0.42, w - 8, d * 0.5, 3, colors.accent, alpha('#2c2014', 0.4), 1.5);
+      grain(ctx, 6, d * 0.42 + 2, w - 12, d * 0.5 - 4, colors.accent, 10);
+      const mid = w / 2;
+      box(ctx, mid - 46, d * 0.46, 44, d * 0.42, 2, null, alpha('#2c2014', 0.3), 1.2);
+      box(ctx, mid + 2, d * 0.46, 44, d * 0.42, 2, null, alpha('#2c2014', 0.3), 1.2);
+      box(ctx, 12, d * 0.48, 26, 12, 2, alpha(colors.main, 0.5), null);
+      box(ctx, w - 44, d * 0.56, 30, 10, 2, alpha(colors.main, 0.45), null);
+    },
+  },
+  {
+    id: 'rack-medio',
+    name: 'Rack médio retrô',
+    category: 'armarios',
+    w: 140,
+    d: 44,
+    keywords: ['rack', 'medio', 'retro', 'tv', 'sala', 'pes-palito'],
+    colors: { main: '#b9834f', accent: '#3b3f45' },
+    colorKeys: [
+      { key: 'main', label: 'Madeira', palette: 'wood' },
+      { key: 'accent', label: 'Detalhe', palette: 'metal' },
+    ],
+    draw: ({ ctx, w, d, colors }) => {
+      box(ctx, 0, 2, w, d - 4, 3, colors.main, alpha('#2c2014', 0.42), 1.5);
+      grain(ctx, 2, 4, w - 4, d - 8, colors.main, 11);
+      const mid = w / 2;
+      line(ctx, mid - 22, 4, mid - 22, d - 4, alpha('#2c2014', 0.35), 1.4);
+      line(ctx, mid + 22, 4, mid + 22, d - 4, alpha('#2c2014', 0.35), 1.4);
+      box(ctx, mid - 18, 8, 36, d - 18, 2, null, alpha('#2c2014', 0.3), 1.2);
+      box(ctx, 10, 7, w * 0.22, d - 16, 2, alpha('#ffffff', 0.14), null);
+      box(ctx, w - 10 - w * 0.22, 7, w * 0.22, d - 16, 2, alpha('#ffffff', 0.14), null);
+      for (const [x, y] of [
+        [10, 6],
+        [w - 10, 6],
+        [10, d - 6],
+        [w - 10, d - 6],
+      ]) {
+        circle(ctx, x, y, 2.6, shade(colors.main, -0.3), alpha('#241c14', 0.35), 1);
+      }
+    },
+  },
 ];

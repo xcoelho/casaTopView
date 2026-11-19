@@ -164,12 +164,7 @@ export function attachPaletteDrop(
     if (wasActive) {
       if (point && world) place(defId, world);
       renderer.invalidate();
-      return;
     }
-    // clique simples: insere no centro da vista
-    const center = store.viewCenter(renderer.width, renderer.height);
-    place(defId, snappedWorld(center));
-    renderer.invalidate();
   }
 
   container.addEventListener('pointerdown', onPointerDown);
