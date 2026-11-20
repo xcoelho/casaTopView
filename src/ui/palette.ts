@@ -1,10 +1,11 @@
 /** Catálogo lateral de móveis com busca e categorias. */
 import type { CategoryId, FurnitureDef } from '../catalog/types';
-import { CATEGORIES, searchDefs } from '../catalog/registry';
+import { CATEGORIES, createItem, getDef, searchDefs } from '../catalog/registry';
 import { fmtLength } from '../core/units';
 import type { Store } from '../core/store';
 import type { Renderer } from '../render/renderer';
 import { itemThumb } from '../render/thumbnail';
+import { createItemPreview } from '../view3d/preview';
 import { attachPaletteDrop } from '../interaction/dropFromPalette';
 import type { Shell } from './shell';
 import { el, icon } from './controls';
@@ -18,6 +19,7 @@ export interface PaletteDeps {
 
 export interface PaletteHandle {
   update: () => void;
+  dispose: () => void;
 }
 
 export function mountPalette(shell: Shell, deps: PaletteDeps): PaletteHandle {
@@ -73,6 +75,34 @@ export function mountPalette(shell: Shell, deps: PaletteDeps): PaletteHandle {
 
   shell.paletteScroll.append(grid, empty, foot);
 
+  const previewBox = el(
+    'div',
+    { class: 'catalog-preview' },
+    el('span', { class: 'catalog-preview-label' }, 'Vista 3D — clique numa peça'),
+  );
+  shell.palette.append(previewBox);
+  const preview = createItemPreview();
+  if (preview) {
+    previewBox.append(preview.element);
+  } else {
+    previewBox.append(el('div', { class: 'catalog-empty' }, 'Prévia 3D indisponível neste navegador.'));
+  }
+
+  let selectedDefId: string | null = null;
+
+  function showDef(defId: string): void {
+    const def = getDef(defId);
+    if (!def || !preview) return;
+    const item = createItem(defId, 0, 0);
+    if (item) preview.show(item);
+  }
+
+  function syncSelected(): void {
+    for (const node of grid.querySelectorAll('.cat-card')) {
+      node.classList.toggle('selected', (node as HTMLElement).dataset.def === selectedDefId);
+    }
+  }
+
   function updateChips(): void {
     for (const chip of chipButtons) chip.node.classList.toggle('active', chip.id === category);
   }
@@ -99,10 +129,27 @@ export function mountPalette(shell: Shell, deps: PaletteDeps): PaletteHandle {
     empty.style.display = defs.length ? 'none' : 'block';
     grid.style.display = defs.length ? 'grid' : 'none';
     count.textContent = `${defs.length} ${defs.length === 1 ? 'item' : 'itens'}`;
+    syncSelected();
   }
 
   updateChips();
   renderGrid();
+
+  const first = searchDefs('', 'todos')[0];
+  if (first) {
+    selectedDefId = first.id;
+    showDef(first.id);
+    syncSelected();
+  }
+
+  grid.addEventListener('click', (event) => {
+    const card = (event.target as HTMLElement).closest('.cat-card') as HTMLElement | null;
+    const defId = card?.dataset.def;
+    if (!defId) return;
+    selectedDefId = defId;
+    showDef(defId);
+    syncSelected();
+  });
 
   searchInput.addEventListener('input', () => {
     query = searchInput.value;
@@ -114,6 +161,9 @@ export function mountPalette(shell: Shell, deps: PaletteDeps): PaletteHandle {
   return {
     update: () => {
       /* o catálogo é estático; nada a atualizar por enquanto */
+    },
+    dispose: () => {
+      preview?.dispose();
     },
   };
 }

@@ -4,6 +4,7 @@ import { FLOORS, floorMaterial, roomAreaCm2, wallParts } from './document';
 import { WALL_HEIGHT, openingHeight } from './constants';
 import { dist } from './geometry';
 import { getDef } from '../catalog/registry';
+import { floorKeyForPisoDef } from '../catalog/items/pisos';
 
 export const OPENING_LABELS: Record<OpeningKind, string> = {
   porta: 'Porta',
@@ -77,6 +78,15 @@ export function computeQuantities(plan: Plan): Quantities {
     entry.areaCm2 += roomAreaCm2(room);
     floorTotals.set(room.floor, entry);
   }
+  // Peças de piso (itens piso-*) somam área em floors, sem contar como móvel.
+  for (const item of plan.items) {
+    const floorKey = floorKeyForPisoDef(item.defId);
+    if (!floorKey) continue;
+    const entry = floorTotals.get(floorKey) ?? { roomCount: 0, areaCm2: 0 };
+    entry.roomCount += 1;
+    entry.areaCm2 += item.w * item.d;
+    floorTotals.set(floorKey, entry);
+  }
   const floors: FloorRow[] = FLOORS.filter((floor) => (floorTotals.get(floor.key)?.roomCount ?? 0) > 0).map(
     (floor) => {
       const entry = floorTotals.get(floor.key)!;
@@ -121,7 +131,8 @@ export function computeQuantities(plan: Plan): Quantities {
     .filter((row): row is OpeningRow => !!row);
 
   const furnitureMap = new Map<string, FurnitureRow>();
-  for (const item of plan.items) {
+  const furnitureItems = plan.items.filter((item) => !floorKeyForPisoDef(item.defId));
+  for (const item of furnitureItems) {
     const name = getDef(item.defId)?.name ?? item.defId;
     const row = furnitureMap.get(item.defId) ?? {
       defId: item.defId,
@@ -151,6 +162,6 @@ export function computeQuantities(plan: Plan): Quantities {
     openings,
     furniture,
     totalFurnitureAreaCm2: furniture.reduce((sum, row) => sum + row.areaCm2, 0),
-    itemCount: plan.items.length,
+    itemCount: furnitureItems.length,
   };
 }

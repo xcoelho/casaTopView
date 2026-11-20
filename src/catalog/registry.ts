@@ -14,6 +14,7 @@ import { infantil } from './items/infantil';
 import { escritorio } from './items/escritorio';
 import { gourmet } from './items/gourmet';
 import { decoracao } from './items/decoracao';
+import { pisos } from './items/pisos';
 import { externo } from './items/externo';
 import { estrutura } from './items/estrutura';
 import { aberturas } from './items/aberturas';
@@ -49,6 +50,7 @@ export const DEFS: FurnitureDef[] = [
   ...escritorio,
   ...gourmet,
   ...decoracao,
+  ...pisos,
   ...externo,
   ...estrutura,
 ];

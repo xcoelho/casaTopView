@@ -1,0 +1,16 @@
+1) Alturas — cole dentro de ITEM_HEIGHT
+
+  'geladeira-side-by-side': [192],
+  'geladeira-retro': [152],
+  'mesa-jantar-cavalete': [76],
+  'mesa-jantar-vidro': [76],
+  'mesa-tulipa': [76],
+  'mesa-centro-organica': [40],
+  'mesa-lateral-tambor': [55],
+  'sofa-modular-l': [76],
+  'poltrona-egg': [112],
+  'banqueta-industrial': [92],
+  'aparador-mid-century': [85],
+  cristaleira: [195],
+  'estante-industrial': [200],
+  'carrinho-bar': [88],

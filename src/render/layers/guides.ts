@@ -129,40 +129,6 @@ export function drawOverlay(
     return;
   }
 
-  if (overlay.type === 'room') {
-    const points = [...overlay.points];
-    if (overlay.cursor) points.push(overlay.cursor);
-    if (points.length >= 2) {
-      ctx.save();
-      ctx.beginPath();
-      const first = worldToScreen(cam, points[0]);
-      ctx.moveTo(first.x, first.y);
-      for (let i = 1; i < points.length; i++) {
-        const p = worldToScreen(cam, points[i]);
-        ctx.lineTo(p.x, p.y);
-      }
-      ctx.closePath();
-      ctx.fillStyle = 'rgba(15, 118, 110, 0.08)';
-      ctx.fill();
-      ctx.setLineDash([6, 4]);
-      ctx.strokeStyle = THEME.accent;
-      ctx.lineWidth = 1.5;
-      ctx.stroke();
-      ctx.restore();
-      for (const point of overlay.points) {
-        const p = worldToScreen(cam, point);
-        ctx.beginPath();
-        ctx.arc(p.x, p.y, 3.5, 0, Math.PI * 2);
-        ctx.fillStyle = '#ffffff';
-        ctx.fill();
-        ctx.strokeStyle = THEME.accent;
-        ctx.lineWidth = 1.5;
-        ctx.stroke();
-      }
-    }
-    return;
-  }
-
   if (overlay.type === 'measure') {
     const a = worldToScreen(cam, overlay.a);
     const b = worldToScreen(cam, overlay.b);

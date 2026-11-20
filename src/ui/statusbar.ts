@@ -17,7 +17,6 @@ export interface StatusbarHandle {
 const HINTS: Record<ToolId, string> = {
   select: 'Clique para selecionar · arraste para mover · Shift + clique soma itens · espaço + arraste navega',
   wall: 'Clique para cada canto da parede · Enter ou Esc termina · arrastar cria uma parede única',
-  room: 'Clique nos cantos do ambiente · clique no primeiro ponto ou Enter para fechar e calcular a área',
   door: 'Passe o mouse sobre uma parede e clique para abrir o vão da porta',
   window: 'Passe o mouse sobre uma parede e clique para abrir o vão da janela',
   measure: 'Arraste entre dois pontos para medir · Shift solta o encaixe',
@@ -27,7 +26,6 @@ const HINTS: Record<ToolId, string> = {
 const TOOL_LABELS: Record<ToolId, string> = {
   select: 'Selecionar',
   wall: 'Parede',
-  room: 'Cômodo',
   door: 'Porta',
   window: 'Janela',
   measure: 'Medir',
@@ -81,7 +79,9 @@ export function mountStatusbar(shell: Shell, deps: StatusbarDeps): StatusbarHand
     hint.append(strong, document.createTextNode(HINTS[store.tool]));
 
     const stats = store.doc;
-    counts.textContent = `${stats.items.length} móveis · ${stats.walls.length} paredes · ${stats.rooms.length} cômodos`;
+    const pisoCount = stats.items.filter((item) => item.defId.startsWith('piso-')).length;
+    const moveisCount = stats.items.length - pisoCount;
+    counts.textContent = `${moveisCount} móveis · ${stats.walls.length} paredes · ${pisoCount} pisos`;
     gridToggle.classList.toggle('on', stats.settings.showGrid);
     snapToggle.classList.toggle('on', stats.settings.snap);
     dimsToggle.classList.toggle('on', stats.settings.showDims);

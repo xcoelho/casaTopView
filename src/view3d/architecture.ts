@@ -1,7 +1,8 @@
 /** Paredes com vãos, esquadrias, portas entreabertas e pisos dos cômodos. */
 import * as THREE from 'three';
 import type { Plan, Wall } from '../core/document';
-import { DEFAULT_DOOR_COLOR, DEFAULT_WALL_COLOR, wallParts } from '../core/document';
+import { DEFAULT_DOOR_COLOR, DEFAULT_WALL_COLOR, itemBounds, wallParts } from '../core/document';
+import { floorKeyForPisoDef } from '../catalog/items/pisos';
 import { pointInPolygon } from '../core/geometry';
 import { shade } from '../catalog/draw';
 import { boxAt, cylinderAt, floorSurface, roundedBoxAt, torusAt } from './materials';
@@ -146,6 +147,9 @@ export function buildWalls(plan: Plan): THREE.Group {
   const roomPolygons = plan.rooms
     .filter((room) => room.points.length >= 3)
     .map((room) => room.points);
+  const pisoBounds = plan.items
+    .filter((item) => !item.hidden && floorKeyForPisoDef(item.defId))
+    .map((item) => itemBounds(item));
 
   for (const wall of plan.walls) {
     const dx = wall.b.x - wall.a.x;
@@ -167,9 +171,9 @@ export function buildWalls(plan: Plan): THREE.Group {
       boxAt(group, end - start, thickness, height, x, z, base, wall.color ?? WALL_COLOR, 1, -angle, 'wallPaint');
     };
 
-    /** O rodapé só existe no lado da parede que dá para um cômodo. */
+    /** O rodapé só existe no lado da parede que dá para um cômodo ou piso manual. */
     const sideTouchesRoom = (start: number, end: number, side: number): boolean => {
-      if (!roomPolygons.length) return false;
+      if (!roomPolygons.length && !pisoBounds.length) return false;
       const nx = -uy * side;
       const nz = ux * side;
       for (const t of [0.15, 0.5, 0.85]) {
@@ -182,6 +186,14 @@ export function buildWalls(plan: Plan): THREE.Group {
             y: z + nz * (thickness / 2 + offset),
           };
           if (roomPolygons.some((points) => pointInPolygon(probe, points))) return true;
+          if (
+            pisoBounds.some(
+              (bounds) =>
+                probe.x >= bounds.x && probe.x <= bounds.x + bounds.w && probe.y >= bounds.y && probe.y <= bounds.y + bounds.h,
+            )
+          ) {
+            return true;
+          }
         }
       }
       return false;

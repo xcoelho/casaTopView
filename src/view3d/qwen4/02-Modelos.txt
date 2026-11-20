@@ -1,0 +1,503 @@
+2) Modelos — cole antes de function generic(...)
+
+/* ────────────────────────── novos móveis ────────────────────────── */
+
+/** Barra reta entre dois pontos: pernas inclinadas, travessas, alças. */
+function bar(
+  g: G,
+  a: [number, number, number],
+  b: [number, number, number],
+  r: number,
+  color: string,
+  kind: MaterialKind = 'metal',
+): void {
+  tubeAt(g, [a, b], r, 0, 0, 0, color, kind);
+}
+
+/** Perna/painel inclinado no plano ZY: do pé (z = footZ, y = 0) ao topo (z = 0, y = topY). */
+function rakedLeg(
+  g: G,
+  tx: number,
+  wz: number,
+  x: number,
+  footZ: number,
+  topY: number,
+  color: string,
+  kind: MaterialKind = 'wood',
+): void {
+  const len = Math.hypot(footZ, topY);
+  const pivot = new THREE.Group();
+  pivot.position.set(x, topY / 2, footZ / 2);
+  pivot.rotation.x = Math.atan2(-footZ, topY);
+  g.add(pivot);
+  boxAt(pivot, tx, wz, len, 0, 0, -len / 2, color, 1, 0, kind);
+}
+
+/** Garrafa torneada para o carrinho de bar e a cristaleira. */
+function bottle(g: G, x: number, z: number, y: number, h: number, r: number, color: string): void {
+  latheAt(
+    g,
+    [[0, 0], [r, 0], [r, h * 0.5], [r * 0.9, h * 0.62], [r * 0.3, h * 0.74], [r * 0.28, h * 0.96], [r * 0.36, h], [0, h]],
+    x,
+    z,
+    y,
+    color,
+    'matte',
+    22,
+  );
+  cylinderAt(g, r * 0.38, h * 0.08, x, z, y + h, CHROME, 1, 'chrome');
+}
+
+/** Geladeira side by side inox: duas portas verticais, dispenser e gaveta inferior. */
+function sideBySideFridge(g: G, p: Palette): void {
+  const { w, d, h, main } = p;
+  const feet = 5;
+  for (const sx of [-1, 1]) {
+    for (const sz of [-1, 1]) {
+      boxAt(g, 5, 5, feet, sx * (w / 2 - 8), sz * (d / 2 - 8), 0, DARK_METAL, 1, 0, 'metal');
+    }
+  }
+  roundedBoxAt(g, w, d, h - feet, 0, 0, feet, shade(main, -0.05), 2.4, 'metal');
+
+  const drawerTop = feet + h * 0.32;
+  const doorBase = drawerTop + 3;
+  const doorH = h - doorBase - 3;
+  const lw = (w - 8) * 0.42;
+  const rw = w - 8 - lw - 2;
+  const lx = -w / 2 + 3 + lw / 2;
+  const rx = w / 2 - 3 - rw / 2;
+  roundedBoxAt(g, lw, 2.6, doorH, lx, d / 2 + 0.8, doorBase, shade(main, 0.03), 1.4, 'metal');
+  roundedBoxAt(g, rw, 2.6, doorH, rx, d / 2 + 0.8, doorBase, main, 1.4, 'metal');
+  // Puxadores verticais no encontro das portas.
+  boxAt(g, 2.6, 4.4, doorH * 0.78, lx + lw / 2 - 5, d / 2 + 3, doorBase + doorH * 0.1, CHROME, 1, 0, 'chrome');
+  boxAt(g, 2.6, 4.4, doorH * 0.78, rx - rw / 2 + 5, d / 2 + 3, doorBase + doorH * 0.1, CHROME, 1, 0, 'chrome');
+  // Gaveta do freezer.
+  roundedBoxAt(g, w - 6, 2.6, drawerTop - feet - 4, 0, d / 2 + 0.8, feet + 2, shade(main, -0.02), 1.4, 'metal');
+  boxAt(g, w * 0.5, 4, 3, 0, d / 2 + 3, drawerTop - 11, CHROME, 1, 0, 'chrome');
+  // Dispenser de água e gelo.
+  const dy = doorBase + doorH * 0.54;
+  boxAt(g, lw * 0.68, 1.4, 30, lx, d / 2 + 2.2, dy - 15, '#2a2e33', 1, 0, 'matte');
+  boxAt(g, lw * 0.5, 3.2, 2, lx, d / 2 + 2.6, dy - 16, '#5c6167', 1, 0, 'metal');
+  boxAt(g, lw * 0.28, 1.2, 9, lx, d / 2 + 3, dy + 1, '#9aa3a8', 1, 0, 'metal');
+  boxAt(g, lw * 0.5, 0.8, 4, lx, d / 2 + 2.8, dy + 12, '#8fd3c2', 1, 0, 'emissive');
+  // Display e grade inferior.
+  boxAt(g, rw * 0.38, 0.9, 5, rx + rw * 0.16, d / 2 + 2.4, doorBase + doorH - 16, '#8fd3c2', 1, 0, 'emissive');
+  boxAt(g, w - 10, 1.6, 4, 0, d / 2 + 1, feet, '#7d858c', 1, 0, 'metal');
+}
+
+/** Geladeira retrô: corpo abaulado, puxador cromado curvo e emblema. */
+function retroFridge(g: G, p: Palette): void {
+  const { w, d, h, main } = p;
+  const feet = 8;
+  for (const sx of [-1, 1]) {
+    for (const sz of [-1, 1]) {
+      coneAt(g, 2, 3, feet, sx * (w / 2 - 10), sz * (d / 2 - 10), 0, CHROME, 1, 'chrome', 12);
+    }
+  }
+  const bodyH = h - feet;
+  roundedBoxAt(g, w, d, bodyH, 0, 0, feet, main, 9, 'paint');
+  roundedBoxAt(g, w - 6, d - 4, 10, 0, 0, h - 12, shade(main, 0.05), 5, 'paint');
+
+  const doorBase = feet + 4;
+  const freeH = bodyH * 0.26;
+  const doorH = bodyH - freeH - 12;
+  const freeBase = doorBase + doorH + 4;
+  roundedBoxAt(g, w - 8, 3, doorH, 0, d / 2 + 0.4, doorBase, shade(main, 0.04), 2, 'paint');
+  roundedBoxAt(g, w - 8, 3, freeH, 0, d / 2 + 0.4, freeBase, shade(main, 0.02), 2, 'paint');
+  // Puxadores cromados curvos.
+  tubeAt(
+    g,
+    [[0, 0, 0], [0, 5, 4], [0, doorH * 0.62 - 5, 4], [0, doorH * 0.62, 0]],
+    1.9,
+    w / 2 - 13,
+    d / 2 + 2,
+    doorBase + doorH * 0.18,
+    CHROME,
+    'chrome',
+  );
+  tubeAt(
+    g,
+    [[0, 0, 0], [0, 4, 3.4], [0, freeH * 0.5 - 4, 3.4], [0, freeH * 0.5, 0]],
+    1.7,
+    w / 2 - 13,
+    d / 2 + 2,
+    freeBase + freeH * 0.22,
+    CHROME,
+    'chrome',
+  );
+  // Emblema e dobradiças aparentes.
+  boxAt(g, w * 0.26, 1, 4.5, -w * 0.1, d / 2 + 2.2, doorBase + doorH - 18, CHROME, 1, 0, 'chrome');
+  sphereAt(g, 2.2, -w * 0.1, doorBase + doorH - 15.6, d / 2 + 2.6, shade(main, -0.3), [1, 1, 0.5], 'chrome');
+  for (const y of [doorBase + 8, doorBase + doorH - 12]) {
+    boxAt(g, 4, 3, 5, -w / 2 + 8, d / 2 + 1.6, y, CHROME, 1, 0, 'chrome');
+  }
+  boxAt(g, w - 14, 2, 3, 0, d / 2 + 1, feet, shade(main, -0.25), 1, 0, 'metal');
+}
+
+/** Mesa de jantar cavalete: tampo ripado grosso, pés em A e barra com cunhas. */
+function trestleTable(g: G, p: Palette): void {
+  const { w, d, h, main, dark } = p;
+  const topT = 6;
+  const topY = h - topT;
+  roundedBoxAt(g, w, d, topT, 0, 0, topY, main, 1.4, 'wood');
+  const planks = Math.max(3, Math.round(d / 26));
+  for (let i = 1; i < planks; i++) {
+    boxAt(g, w - 6, 0.9, 0.7, 0, -d / 2 + (i * d) / planks, h - 0.7, shade(main, -0.16), 1, 0, 'wood');
+  }
+  boxAt(g, w - 60, 5, 8, 0, -d / 2 + 12, topY - 8, dark, 1, 0, 'wood');
+  boxAt(g, w - 60, 5, 8, 0, d / 2 - 12, topY - 8, dark, 1, 0, 'wood');
+
+  const legX = w / 2 - Math.min(52, w * 0.22);
+  const spread = d / 2 - 14;
+  const apex = topY - 6;
+  const braceY = apex * 0.34;
+  for (const sx of [-1, 1]) {
+    const x = sx * legX;
+    for (const sz of [-1, 1]) rakedLeg(g, 8, 8, x, sz * spread, apex, dark, 'wood');
+    boxAt(g, 9, spread * 1.34 + 8, 7, x, 0, braceY, dark, 1, 0, 'wood');
+    boxAt(g, 12, spread * 2 + 10, 5, x, 0, 0, shade(dark, -0.1), 1, 0, 'wood');
+  }
+  boxAt(g, legX * 2, 7, 9, 0, 0, braceY, dark, 1, 0, 'wood');
+  for (const sx of [-1, 1]) {
+    boxAt(g, 5, 9, 15, sx * (legX - 9), 0, braceY - 2, shade(main, -0.24), 1, 0, 'wood');
+  }
+}
+
+/** Mesa de jantar de vidro com duas bases em X de madeira e tirante cromado. */
+function glassDiningTable(g: G, p: Palette): void {
+  const { w, d, h, main } = p;
+  const topT = 3;
+  const topY = h - topT;
+  const stationX = w / 2 - Math.min(60, w * 0.24);
+  const spread = d * 0.34;
+  for (const sx of [-1, 1]) {
+    for (const sz of [-1, 1]) {
+      rakedLeg(g, 7, 16, sx * stationX, sz * spread, topY - 2, main, 'wood');
+      boxAt(g, 9, 18, 2.5, sx * stationX, sz * spread, 0, DARK_METAL, 1, 0, 'metal');
+    }
+    boxAt(g, 10, 20, 3, sx * stationX, 0, topY - 3, DARK_METAL, 1, 0, 'metal');
+  }
+  bar(g, [-stationX, h * 0.34, 0], [stationX, h * 0.34, 0], 2.2, CHROME, 'chrome');
+  roundedBoxAt(g, w, d, topT, 0, 0, topY, GLASS, 1.2, 'glass', 0.42);
+  boxAt(g, w - 3, d - 3, 0.8, 0, 0, topY + topT - 0.8, '#e8f4f8', 0.5, 0, 'glass');
+}
+
+/** Mesa tulipa: pedestal único torneado e tampo redondo de mármore. */
+function tulipTable(g: G, p: Palette): void {
+  const { w, d, h, main, accent } = p;
+  const r = Math.min(w, d) / 2;
+  const baseR = r * 0.44;
+  latheAt(
+    g,
+    [[0, 0], [baseR, 0], [baseR, 2], [baseR * 0.92, 5], [r * 0.16, h * 0.5], [r * 0.11, h - 5], [0, h - 5]],
+    0,
+    0,
+    0,
+    main,
+    'paint',
+    40,
+  );
+  latheAt(g, [[0, 0], [r - 1, 0], [r, 1.6], [r, 4], [0, 4]], 0, 0, h - 4, accent, 'stone', 48);
+  // Veios do mármore.
+  for (let i = 0; i < 4; i++) {
+    const a = hash(i + 3) * Math.PI;
+    const len = r * (0.7 + hash(i) * 0.8);
+    boxAt(g, len, 1.1 + hash(i + 7), 0.5, (hash(i + 2) - 0.5) * r * 0.5, (hash(i + 5) - 0.5) * r * 0.5, h - 0.5, shade(accent, -0.16), 0.55, a, 'stone');
+  }
+}
+
+/** Mesa de centro orgânica: tampo oval de vidro sobre blocos de madeira cruzados. */
+function organicCoffeeTable(g: G, p: Palette): void {
+  const { w, d, h, main, dark } = p;
+  const r = Math.min(w, d) / 2;
+  roundedBoxAt(g, w * 0.52, 16, h - 4, -w * 0.06, -d * 0.05, 0, dark, 4, 'wood', 1, 0.42);
+  roundedBoxAt(g, w * 0.4, 14, h - 6, w * 0.14, d * 0.1, 0, shade(main, -0.1), 4, 'wood', 1, -0.62);
+  cylinderAt(g, 3.2, h - 4, w * 0.02, 0, 0, shade(main, -0.22), 1, 'wood');
+  const top = cylinderAt(g, r, 3, 0, 0, h - 3, GLASS, 0.42, 'glass');
+  top.scale.set(1, 1, 0.76);
+  const shine = cylinderAt(g, r * 0.94, 0.6, 0, 0, h - 0.6, '#eaf6fa', 0.4, 'glass');
+  shine.scale.set(1, 1, 0.76);
+}
+
+/** Mesa lateral tambor: corpo metálico estriado com tampo de pedra. */
+function drumSideTable(g: G, p: Palette): void {
+  const { w, d, h, main, accent } = p;
+  const r = Math.min(w, d) / 2;
+  latheAt(g, [[0, 0], [r * 0.94, 0], [r, 3], [r, h - 6], [r * 0.97, h - 4], [0, h - 4]], 0, 0, 0, main, 'metal', 40);
+  const flutes = 22;
+  for (let i = 0; i < flutes; i++) {
+    const a = (i / flutes) * Math.PI * 2;
+    boxAt(g, 2.2, 1.6, h - 14, Math.cos(a) * r, Math.sin(a) * r, 6, shade(main, -0.14), 1, -a, 'metal');
+  }
+  torusAt(g, r * 0.99, 0.9, 0, 0, 5, shade(main, 0.12), 'metal');
+  torusAt(g, r * 0.99, 0.9, 0, 0, h - 8, shade(main, 0.12), 'metal');
+  latheAt(g, [[0, 0], [r + 1.2, 0], [r + 2, 1.4], [r + 2, 4], [0, 4]], 0, 0, h - 4, accent, 'stone', 44);
+}
+
+/** Sofá modular em L: base baixa, chaise à direita e almofadas soltas. */
+function sectionalSofa(g: G, p: Palette): void {
+  const { w, d, h, main, light, dark, accent } = p;
+  const arm = 16;
+  const backD = 20;
+  const plinth = 10;
+  const mainD = Math.max(88, d * 0.56);
+  const extD = d - mainD;
+  const chaiseW = Math.min(w * 0.38, 130);
+  const cz = -d / 2 + mainD / 2;
+  const seatY = plinth + 22;
+
+  for (const sx of [-1, 1]) {
+    for (const sz of [-1, 1]) {
+      cylinderAt(g, 2, plinth, sx * (w / 2 - 10), sz * (d / 2 - 10), 0, DARK_METAL, 1, 'metal');
+    }
+  }
+  roundedBoxAt(g, w, mainD, 22, 0, cz, plinth, dark, 3, 'fabric');
+  roundedBoxAt(g, chaiseW, extD + 2, 22, w / 2 - chaiseW / 2, -d / 2 + mainD + extD / 2 - 1, plinth, dark, 3, 'fabric');
+  roundedBoxAt(g, w, backD, h - seatY, 0, -d / 2 + backD / 2, seatY, main, 5, 'fabric');
+  roundedBoxAt(g, arm, mainD, 24, -w / 2 + arm / 2, cz, seatY - 4, main, 6, 'fabric');
+  roundedBoxAt(g, arm, d, 24, w / 2 - arm / 2, 0, seatY - 4, main, 6, 'fabric');
+
+  const zStart = -d / 2 + backD + 2;
+  const seatL = -w / 2 + arm;
+  const seatR = w / 2 - chaiseW;
+  const cw = (seatR - seatL - 4) / 2;
+  for (let i = 0; i < 2; i++) {
+    const x = seatL + 2 + cw * (i + 0.5);
+    const dep = mainD - backD - 8;
+    roundedBoxAt(g, cw - 3, dep, 14, x, zStart + dep / 2, seatY, light, 4, 'fabric');
+    roundedBoxAt(g, cw - 6, 14, 30, x, -d / 2 + backD + 8, seatY + 6, light, 5, 'fabric', 1, 0, -0.16);
+  }
+  const chW = chaiseW - arm - 2;
+  const chX = w / 2 - arm - chW / 2;
+  const chDep = d / 2 - 4 - zStart;
+  roundedBoxAt(g, chW, chDep, 14, chX, zStart + chDep / 2, seatY, light, 4, 'fabric');
+  roundedBoxAt(g, chW - 6, 14, 30, chX, -d / 2 + backD + 8, seatY + 6, light, 5, 'fabric', 1, 0, -0.16);
+  // Almofadas decorativas e manta sobre a chaise.
+  roundedBoxAt(g, 34, 10, 34, seatL + 26, -d / 2 + backD + 18, seatY + 12, accent, 5, 'fabric', 1, 0.3, -0.28);
+  roundedBoxAt(g, 30, 10, 30, seatR - 22, -d / 2 + backD + 18, seatY + 12, shade(accent, 0.16), 5, 'fabric', 1, -0.26, -0.28);
+  roundedBoxAt(g, chW - 10, 46, 3, chX, d / 2 - 32, seatY + 14, shade(accent, -0.18), 2, 'fabric', 1, 0.06);
+}
+
+/** Poltrona egg: concha torneada inclinada sobre base giratória de alumínio. */
+function eggChair(g: G, p: Palette): void {
+  const { w, d, h, main, light, accent } = p;
+  const r = Math.min(w, d) / 2;
+  const seatY = 42;
+  for (let i = 0; i < 4; i++) {
+    const a = (i / 4) * Math.PI * 2 + Math.PI / 4;
+    const len = r * 0.92;
+    bar(g, [0, 8, 0], [Math.cos(a) * len, 3, Math.sin(a) * len], 2.4, CHROME, 'chrome');
+    sphereAt(g, 2.2, Math.cos(a) * len, 2.4, Math.sin(a) * len, DARK_METAL, [1, 1, 1], 'metal');
+  }
+  cylinderAt(g, 4.2, seatY - 8, 0, 0, 6, CHROME, 1, 'chrome');
+  cylinderAt(g, 7, 3, 0, 0, seatY - 8, DARK_METAL, 1, 'metal');
+
+  const shell = new THREE.Group();
+  shell.position.set(0, seatY, -4);
+  shell.rotation.x = 1.02;
+  g.add(shell);
+  const H = h - seatY;
+  latheAt(
+    shell,
+    [
+      [0, 0], [r * 0.5, 0], [r * 0.84, H * 0.14], [r, H * 0.46], [r * 0.97, H * 0.78],
+      [r * 0.88, H], [r * 0.82, H], [r * 0.9, H * 0.76], [r * 0.93, H * 0.46],
+      [r * 0.78, H * 0.16], [r * 0.46, 5], [0, 5],
+    ],
+    0,
+    0,
+    0,
+    main,
+    'fabric',
+    36,
+  );
+  roundedBoxAt(shell, r * 1.5, r * 1.3, 12, 0, r * 0.1, 5, light, 5, 'fabric');
+  roundedBoxAt(shell, r * 1.3, 12, r * 0.7, 0, -r * 0.5, 10, accent, 5, 'fabric', 1, 0, -0.2);
+}
+
+/** Banqueta industrial: assento estampado, pernas abertas e travessas tubulares. */
+function industrialStool(g: G, p: Palette): void {
+  const { w, d, h, main, accent } = p;
+  const seatY = h * 0.72;
+  const footX = w / 2 - 2;
+  const footZ = d / 2 - 2;
+  const topX = w / 2 - 9;
+  const topZ = d / 2 - 9;
+  for (const sx of [-1, 1]) {
+    for (const sz of [-1, 1]) {
+      bar(g, [sx * footX, 0, sz * footZ], [sx * topX, seatY, sz * topZ], 1.7, accent, 'metal');
+      sphereAt(g, 1.9, sx * footX, 1.2, sz * footZ, DARK_METAL, [1, 0.6, 1], 'metal');
+    }
+  }
+  const braceY = h * 0.3;
+  const t = braceY / seatY;
+  const bx = footX + (topX - footX) * t;
+  const bz = footZ + (topZ - footZ) * t;
+  for (const sz of [-1, 1]) bar(g, [-bx, braceY, sz * bz], [bx, braceY, sz * bz], 1.3, accent, 'metal');
+  for (const sx of [-1, 1]) bar(g, [sx * bx, braceY, -bz], [sx * bx, braceY, bz], 1.3, accent, 'metal');
+
+  roundedBoxAt(g, w - 12, d - 12, 3.4, 0, 0, seatY, main, 1.4, 'metal');
+  boxAt(g, w - 18, d - 18, 1, 0, 0, seatY + 3.4, shade(main, 0.08), 1, 0, 'metal');
+  for (const sx of [-1, 1]) {
+    boxAt(g, 2, d - 14, 3, sx * (w / 2 - 7), 0, seatY - 2, shade(main, -0.12), 1, 0, 'metal');
+    bar(g, [sx * topX, seatY, -topZ], [sx * (topX - 2), h - 6, -topZ + 3], 1.6, accent, 'metal');
+  }
+  roundedBoxAt(g, w - 16, 3, 14, 0, -topZ + 3, h - 16, main, 1.4, 'metal');
+}
+
+/** Aparador mid-century: portas ripadas, pés palito inclinados e puxadores latão. */
+function midCenturySideboard(g: G, p: Palette): void {
+  const { w, d, h, main, dark, accent } = p;
+  const legH = 22;
+  const bodyH = h - legH - 4;
+  for (const sx of [-1, 1]) {
+    for (const sz of [-1, 1]) {
+      bar(
+        g,
+        [sx * (w / 2 - 6), 0, sz * (d / 2 - 6)],
+        [sx * (w / 2 - 14), legH, sz * (d / 2 - 12)],
+        2.2,
+        dark,
+        'wood',
+      );
+    }
+  }
+  roundedBoxAt(g, w, d, bodyH, 0, 0, legH, main, 1.2, 'wood');
+  roundedBoxAt(g, w + 4, d + 3, 4, 0, 0, h - 4, shade(main, 0.06), 1, 'wood');
+  const doors = 4;
+  const dw = (w - 6 - (doors - 1) * 2) / doors;
+  for (let i = 0; i < doors; i++) {
+    const x = -w / 2 + 3 + dw / 2 + i * (dw + 2);
+    roundedBoxAt(g, dw, 2, bodyH - 8, x, d / 2 + 0.6, legH + 4, shade(main, i % 2 ? -0.03 : 0.02), 0.8, 'wood');
+    const slats = Math.max(4, Math.round(dw / 6));
+    for (let s = 0; s < slats; s++) {
+      const sx2 = x - dw / 2 + 2.5 + (s * (dw - 5)) / Math.max(slats - 1, 1);
+      boxAt(g, 1.8, 1.2, bodyH - 14, sx2, d / 2 + 1.8, legH + 7, shade(main, -0.16), 1, 0, 'wood');
+    }
+    boxAt(g, 2.2, 3, 12, x + (i % 2 ? -dw / 2 + 4 : dw / 2 - 4), d / 2 + 2.4, legH + bodyH * 0.45, accent, 1, 0, 'metal');
+  }
+  boxAt(g, w - 8, 1.6, 1.6, 0, -d / 2 + 2, legH + 2, shade(main, -0.2), 1, 0, 'wood');
+}
+
+/** Cristaleira: portas de vidro com caixilho, prateleiras de vidro, louças e LED. */
+function displayCabinet(g: G, p: Palette): void {
+  const { w, d, h, main, dark, accent } = p;
+  const plinth = 10;
+  const t = 3;
+  boxAt(g, w - 8, d - 8, plinth, 0, 0, 0, shade(main, -0.3), 1, 0, 'wood');
+  for (const sx of [-1, 1]) boxAt(g, t, d, h - plinth, sx * (w / 2 - t / 2), 0, plinth, main, 1, 0, 'wood');
+  boxAt(g, w - 2 * t, 1.6, h - plinth, 0, -d / 2 + 0.8, plinth, shade(main, -0.22), 1, 0, 'wood');
+  boxAt(g, w, d, t, 0, 0, plinth, shade(main, -0.08), 1, 0, 'wood');
+  boxAt(g, w + 6, d + 4, 5, 0, 0, h - 5, shade(main, 0.05), 1, 0, 'wood');
+  boxAt(g, w + 2, d + 2, 3, 0, 0, h - 8, dark, 1, 0, 'wood');
+
+  const rows = 3;
+  const innerH = h - plinth - 14;
+  for (let i = 1; i <= rows; i++) {
+    const y = plinth + (i * innerH) / (rows + 1);
+    boxAt(g, w - 2 * t - 2, d - 6, 1.6, 0, 0, y, GLASS, 0.4, 0, 'glass');
+    for (let k = 0; k < 3; k++) {
+      const plate = cylinderAt(g, 9, 1.2, -w * 0.26 + k * 3.2, -d * 0.05, y + 10.4, PORCELAIN, 1, 'ceramic');
+      plate.rotation.x = Math.PI / 2;
+    }
+    for (let k = 0; k < 3; k++) {
+      cylinderAt(g, 3, 11, w * 0.1 + k * 8, d * 0.05, y + 1.6, '#dfeef2', 0.55, 'glass');
+    }
+    latheAt(g, [[0, 0], [6, 0], [8, 5], [8.6, 8], [7.4, 8], [6.6, 5], [0, 2]], w * 0.32, -d * 0.12, y + 1.6, accent, 'ceramic', 24);
+  }
+  bottle(g, -w * 0.3, d * 0.12, plinth + t, 26, 4, shade(accent, -0.3));
+
+  const dw = (w - 4) / 2;
+  const dh = h - plinth - 14;
+  const y0 = plinth + 5;
+  for (let i = 0; i < 2; i++) {
+    const x = -w / 2 + 2 + dw / 2 + i * dw;
+    boxAt(g, dw - 4, 1.2, dh - 8, x, d / 2 - 0.6, y0 + 4, GLASS, 0.26, 0, 'glass');
+    for (const sx of [-1, 1]) boxAt(g, 4, 2.4, dh, x + sx * (dw / 2 - 2), d / 2 - 0.6, y0, main, 1, 0, 'wood');
+    boxAt(g, dw, 2.4, 4, x, d / 2 - 0.6, y0, main, 1, 0, 'wood');
+    boxAt(g, dw, 2.4, 4, x, d / 2 - 0.6, y0 + dh - 4, main, 1, 0, 'wood');
+    boxAt(g, dw - 6, 2, 2, x, d / 2 - 0.6, y0 + dh * 0.5, main, 1, 0, 'wood');
+    boxAt(g, 2, 2.6, 14, x + (i ? -dw / 2 + 5 : dw / 2 - 5), d / 2 + 0.8, y0 + dh * 0.42, accent, 1, 0, 'metal');
+  }
+  boxAt(g, w - 14, 1.2, 1.2, 0, d / 2 - 6, h - 12, '#fff3cf', 1, 0, 'emissive');
+}
+
+/** Estante industrial: montantes metálicos, X no fundo e prateleiras de madeira. */
+function industrialShelf(g: G, p: Palette): void {
+  const { w, d, h, main, accent } = p;
+  const post = 3.4;
+  for (const sx of [-1, 1]) {
+    for (const sz of [-1, 1]) {
+      boxAt(g, post, post, h, sx * (w / 2 - post / 2), sz * (d / 2 - post / 2), 0, accent, 1, 0, 'metal');
+      boxAt(g, post + 3, post + 3, 1.6, sx * (w / 2 - post / 2), sz * (d / 2 - post / 2), 0, DARK_METAL, 1, 0, 'metal');
+    }
+  }
+  bar(g, [-w / 2 + 3, 5, -d / 2 + 2], [w / 2 - 3, h - 5, -d / 2 + 2], 1.2, accent, 'metal');
+  bar(g, [w / 2 - 3, 5, -d / 2 + 2], [-w / 2 + 3, h - 5, -d / 2 + 2], 1.2, accent, 'metal');
+
+  const bookColors = ['#a8583f', '#4f6d7a', '#7d8a63', '#c2a469', '#6f5f7a'];
+  const rows = 5;
+  for (let i = 0; i < rows; i++) {
+    const y = 6 + (i * (h - 18)) / (rows - 1);
+    boxAt(g, w - 4, d - 2, 3.2, 0, 0, y, main, 1, 0, 'wood');
+    boxAt(g, w - 4, 1.4, 1.4, 0, d / 2 - 1, y + 3.2, shade(main, -0.18), 1, 0, 'wood');
+    const top = y + 3.2;
+    if (i % 3 === 0) {
+      for (let b = 0; b < 6; b++) {
+        const bh = 16 + hash(i * 9 + b) * 10;
+        boxAt(g, 3.4, d * 0.6, bh, -w / 2 + 12 + b * 4.6, -d * 0.06, top, bookColors[(i + b) % bookColors.length], 1, 0, 'matte');
+      }
+      boxAt(g, 26, d * 0.62, 18, w * 0.26, 0, top, shade(main, -0.12), 1, 0, 'wood');
+    } else if (i % 3 === 1) {
+      boxAt(g, w * 0.3, d * 0.66, 20, -w * 0.24, 0, top, '#d9d2c4', 1, 0, 'fabric');
+      boxAt(g, w * 0.3, d * 0.66, 1.6, -w * 0.24, 0, top + 20, shade(accent, -0.1), 1, 0, 'metal');
+      cylinderAt(g, 5, 12, w * 0.22, 0, top, '#8a6142', 1, 'ceramic');
+      sphereAt(g, 7, w * 0.22, top + 20, 0, '#7d8a63', [1, 0.85, 1], 'foliage');
+    } else {
+      for (let b = 0; b < 4; b++) {
+        boxAt(g, 3, d * 0.55, 20, w * 0.1 + b * 4, 0, top, bookColors[(i + b) % bookColors.length], 1, 0, 'matte');
+      }
+      latheAt(g, [[0, 0], [6, 0], [7.5, 6], [6, 14], [4, 17], [0, 17]], -w * 0.26, 0, top, PORCELAIN, 'ceramic', 24);
+    }
+  }
+}
+
+/** Carrinho de bar: tubular dourado com rodízios, vidros, garrafas e balde de gelo. */
+function barCart(g: G, p: Palette): void {
+  const { w, d, h, accent } = p;
+  const low = 18;
+  const top = h - 14;
+  for (const sx of [-1, 1]) {
+    for (const sz of [-1, 1]) {
+      bar(g, [sx * (w / 2 - 4), 6, sz * (d / 2 - 4)], [sx * (w / 2 - 4), top + 4, sz * (d / 2 - 4)], 2, accent, 'metal');
+      const wheel = cylinderAt(g, 3.2, 2, sx * (w / 2 - 4), sz * (d / 2 - 4), 3, DARK_METAL, 1, 'metal');
+      wheel.rotation.z = Math.PI / 2;
+    }
+  }
+  tubeAt(
+    g,
+    [[-w / 2 + 4, top + 4, -d / 2 + 4], [-w / 2 + 4, h, -d / 2 + 4], [w / 2 - 4, h, -d / 2 + 4], [w / 2 - 4, top + 4, -d / 2 + 4]],
+    2,
+    0,
+    0,
+    0,
+    accent,
+    'metal',
+  );
+  for (const y of [low, top]) {
+    boxAt(g, w - 8, d - 8, 1.6, 0, 0, y, GLASS, 0.4, 0, 'glass');
+    for (const sz of [-1, 1]) bar(g, [-w / 2 + 4, y + 1.6, sz * (d / 2 - 4)], [w / 2 - 4, y + 1.6, sz * (d / 2 - 4)], 1.4, accent, 'metal');
+    for (const sx of [-1, 1]) bar(g, [sx * (w / 2 - 4), y + 1.6, -d / 2 + 4], [sx * (w / 2 - 4), y + 1.6, d / 2 - 4], 1.4, accent, 'metal');
+  }
+  bottle(g, -w * 0.3, -d * 0.1, top + 1.6, 30, 4.2, '#3f5d43');
+  bottle(g, -w * 0.14, d * 0.12, top + 1.6, 24, 4.6, '#8a4a2c');
+  bottle(g, w * 0.02, -d * 0.14, top + 1.6, 27, 4, '#2f3f52');
+  for (let i = 0; i < 3; i++) {
+    cylinderAt(g, 3.2, 9, w * 0.2 + i * 8, d * 0.14, top + 1.6, '#dfeef2', 0.5, 'glass');
+  }
+  latheAt(g, [[0, 0], [8, 0], [9.5, 4], [10, 16], [9, 16], [8.6, 4], [0, 2]], w * 0.26, -d * 0.12, low + 1.6, CHROME, 'chrome', 26);
+  sphereAt(g, 3, w * 0.26, low + 17, -d * 0.12, '#eaf6fa', [1, 0.8, 1], 'glass');
+  for (let i = 0; i < 4; i++) {
+    bottle(g, -w * 0.3 + i * 11, d * 0.08, low + 1.6, 22, 3.6, i % 2 ? '#4a5d3a' : '#6b3f2a');
+  }
+}

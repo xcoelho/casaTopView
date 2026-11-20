@@ -301,43 +301,6 @@ export function mountInspector(shell: Shell, deps: InspectorDeps): InspectorHand
     ];
   }
 
-  function renderRoom(room: Room): Node[] {
-    return [
-      section(
-        'Cômodo',
-        textField({
-          label: 'Nome',
-          value: room.name,
-          onCommit: (value) =>
-            store.tx('Renomear cômodo', () => {
-              room.name = value || 'Ambiente';
-            }),
-        }),
-        selectField({
-          label: 'Piso',
-          value: room.floor,
-          options: FLOORS.map((floor) => ({ value: floor.key, label: floor.name })),
-          onChange: (value) =>
-            store.tx('Piso', () => {
-              room.floor = value as Room['floor'];
-            }),
-        }),
-        readOnlyRow('Área', fmtArea(roomAreaCm2(room))),
-        readOnlyRow('Lados', String(room.points.length)),
-        el(
-          'div',
-          { class: 'row-actions' },
-          button({
-            label: 'Excluir cômodo',
-            icon: 'trash',
-            variant: 'danger',
-            onClick: () => store.removeById(room.id),
-          }),
-        ),
-      ),
-    ];
-  }
-
   function renderOpening(opening: Opening): Node[] {
     const wall = store.findWall(opening.wallId);
     const length = wall ? Math.hypot(wall.b.x - wall.a.x, wall.b.y - wall.a.y) : 0;
@@ -458,16 +421,19 @@ export function mountInspector(shell: Shell, deps: InspectorDeps): InspectorHand
 
   function renderDocument(): Node[] {
     const settings = store.doc.settings;
-    const area = store.doc.rooms.reduce((sum, room) => sum + roomAreaCm2(room), 0);
+    const floorItems = store.doc.items.filter((item) => item.defId.startsWith('piso-'));
+    const area =
+      store.doc.rooms.reduce((sum, room) => sum + roomAreaCm2(room), 0) +
+      floorItems.reduce((sum, item) => sum + item.w * item.d, 0);
     return [
       section(
         'Documento',
         el(
           'div',
           { class: 'summary-grid' },
-          el('div', { class: 'summary-cell' }, el('b', {}, String(store.doc.items.length)), el('span', {}, 'móveis')),
+          el('div', { class: 'summary-cell' }, el('b', {}, String(store.doc.items.length - floorItems.length)), el('span', {}, 'móveis')),
           el('div', { class: 'summary-cell' }, el('b', {}, String(store.doc.walls.length)), el('span', {}, 'paredes')),
-          el('div', { class: 'summary-cell' }, el('b', {}, String(store.doc.rooms.length)), el('span', {}, 'cômodos')),
+          el('div', { class: 'summary-cell' }, el('b', {}, String(store.doc.rooms.length + floorItems.length)), el('span', {}, 'pisos')),
           el('div', { class: 'summary-cell' }, el('b', {}, fmtArea(area)), el('span', {}, 'área')),
         ),
       ),
@@ -518,7 +484,7 @@ export function mountInspector(shell: Shell, deps: InspectorDeps): InspectorHand
             store.doc.settings.showDims = checked;
           }),
         ),
-        toggleRow('Nome e área dos cômodos', settings.showAreas, (checked) =>
+        toggleRow('Rótulos de área', settings.showAreas, (checked) =>
           store.tx('Rótulos', () => {
             store.doc.settings.showAreas = checked;
           }),
@@ -530,7 +496,6 @@ export function mountInspector(shell: Shell, deps: InspectorDeps): InspectorHand
           'div',
           { class: 'kbd-list' },
           el('div', { class: 'kbd-row' }, el('span', {}, 'Arrastar do catálogo'), el('span', {}, el('kbd', { class: 'k' }, 'arraste'))),
-          el('div', { class: 'kbd-row' }, el('span', {}, 'Fechar cômodo'), el('span', {}, el('kbd', { class: 'k' }, 'Enter'))),
           el('div', { class: 'kbd-row' }, el('span', {}, 'Girar 90°'), el('span', {}, el('kbd', { class: 'k' }, 'R'))),
         ),
         el(
@@ -556,12 +521,10 @@ export function mountInspector(shell: Shell, deps: InspectorDeps): InspectorHand
     } else {
       const item = selection.length === 1 ? store.findItem(selection[0]) : null;
       const wall = selection.length === 1 ? store.findWall(selection[0]) : null;
-      const room = selection.length === 1 ? store.findRoom(selection[0]) : null;
       const opening = selection.length === 1 ? store.findOpening(selection[0]) : null;
 
       if (item) nodes.push(...renderItem(item));
       else if (wall) nodes.push(...renderWall(wall));
-      else if (room) nodes.push(...renderRoom(room));
       else if (opening) nodes.push(...renderOpening(opening));
       else nodes.push(...renderMulti());
     }

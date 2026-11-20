@@ -1,0 +1,44 @@
+3) Cases — cole dentro do switch (item.defId) (antes do default)
+
+    case 'geladeira-side-by-side':
+      sideBySideFridge(body, palette);
+      break;
+    case 'geladeira-retro':
+      retroFridge(body, palette);
+      break;
+    case 'mesa-jantar-cavalete':
+      trestleTable(body, palette);
+      break;
+    case 'mesa-jantar-vidro':
+      glassDiningTable(body, palette);
+      break;
+    case 'mesa-tulipa':
+      tulipTable(body, palette);
+      break;
+    case 'mesa-centro-organica':
+      organicCoffeeTable(body, palette);
+      break;
+    case 'mesa-lateral-tambor':
+      drumSideTable(body, palette);
+      break;
+    case 'sofa-modular-l':
+      sectionalSofa(body, palette);
+      break;
+    case 'poltrona-egg':
+      eggChair(body, palette);
+      break;
+    case 'banqueta-industrial':
+      industrialStool(body, palette);
+      break;
+    case 'aparador-mid-century':
+      midCenturySideboard(body, palette);
+      break;
+    case 'cristaleira':
+      displayCabinet(body, palette);
+      break;
+    case 'estante-industrial':
+      industrialShelf(body, palette);
+      break;
+    case 'carrinho-bar':
+      barCart(body, palette);
+      break;

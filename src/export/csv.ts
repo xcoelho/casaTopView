@@ -51,9 +51,11 @@ export function quantitiesCSV(plan: Plan): string {
   for (const opening of q.openings) rows.push([opening.label, opening.count, m(opening.widthCm)]);
   rows.push([]);
 
-  rows.push(['Cômodos', 'Piso', 'Área (m²)']);
-  for (const room of q.rooms) rows.push([room.name, room.floorName, m2(room.areaCm2)]);
-  rows.push([]);
+  if (q.rooms.length > 0) {
+    rows.push(['Cômodos', 'Piso', 'Área (m²)']);
+    for (const room of q.rooms) rows.push([room.name, room.floorName, m2(room.areaCm2)]);
+    rows.push([]);
+  }
 
   rows.push(['Móveis', 'Quantidade', 'Largura (cm)', 'Profundidade (cm)', 'Área (m²)']);
   for (const item of q.furniture) {

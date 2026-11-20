@@ -73,7 +73,7 @@ export function openMaterialsDialog(deps: MaterialsDeps): void {
     !quantities.rooms.length && !quantities.itemCount && quantities.wallLengthCm < 1;
   if (empty) {
     body.append(
-      el('p', { class: 'ud-note' }, 'A planta está vazia — desenhe paredes e cômodos para ver os quantitativos.'),
+      el('p', { class: 'ud-note' }, 'A planta está vazia — desenhe paredes e arraste pisos do catálogo para ver os quantitativos.'),
     );
   }
 
@@ -82,9 +82,9 @@ export function openMaterialsDialog(deps: MaterialsDeps): void {
       section(
         'Pisos por acabamento',
         table(
-          ['Acabamento', 'Ambientes', 'Área'],
+          ['Acabamento', 'Peças', 'Área'],
           quantities.floors.map((floor) => [floor.name, floor.roomCount, fmtArea(floor.areaCm2)]),
-          ['Total', quantities.rooms.length, fmtArea(quantities.totalFloorCm2)],
+          ['Total', quantities.floors.reduce((sum, floor) => sum + floor.roomCount, 0), fmtArea(quantities.totalFloorCm2)],
         ),
       ),
     );

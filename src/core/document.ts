@@ -390,85 +390,23 @@ export function examplePlan(): Plan {
     wall('wl_banho', 830, 450, 830, 780),
   ];
 
-  plan.rooms = [
-    {
-      id: uid('rm'),
-      name: 'Sala',
-      floor: 'madeira',
-      points: [
-        { x: 0, y: 0 },
-        { x: 560, y: 0 },
-        { x: 560, y: 470 },
-        { x: 0, y: 470 },
-      ],
-    },
-    {
-      id: uid('rm'),
-      name: 'Cozinha',
-      floor: 'porcelanato',
-      points: [
-        { x: 0, y: 470 },
-        { x: 560, y: 470 },
-        { x: 560, y: 780 },
-        { x: 0, y: 780 },
-      ],
-    },
-    {
-      id: uid('rm'),
-      name: 'Quarto 1',
-      floor: 'madeira',
-      points: [
-        { x: 560, y: 0 },
-        { x: 1100, y: 0 },
-        { x: 1100, y: 340 },
-        { x: 560, y: 340 },
-      ],
-    },
-    {
-      id: uid('rm'),
-      name: 'Corredor',
-      floor: 'madeira',
-      points: [
-        { x: 560, y: 340 },
-        { x: 1100, y: 340 },
-        { x: 1100, y: 450 },
-        { x: 560, y: 450 },
-      ],
-    },
-    {
-      id: uid('rm'),
-      name: 'Quarto 2',
-      floor: 'madeira',
-      points: [
-        { x: 560, y: 450 },
-        { x: 830, y: 450 },
-        { x: 830, y: 780 },
-        { x: 560, y: 780 },
-      ],
-    },
-    {
-      id: uid('rm'),
-      name: 'Banho',
-      floor: 'ceramica',
-      points: [
-        { x: 830, y: 450 },
-        { x: 1100, y: 450 },
-        { x: 1100, y: 780 },
-        { x: 830, y: 780 },
-      ],
-    },
-    {
-      id: uid('rm'),
-      name: 'Varanda',
-      floor: 'concreto',
-      points: [
-        { x: 1180, y: 60 },
-        { x: 1680, y: 60 },
-        { x: 1680, y: 700 },
-        { x: 1180, y: 700 },
-      ],
-    },
-  ];
+  plan.rooms = [];
+
+  /* Pisos manuais (itens piso-*), um por ambiente do exemplo. */
+  let zcPiso = -100;
+  const piso = (defId: string, x0: number, y0: number, x1: number, y1: number): void => {
+    const item = createItem(defId, (x0 + x1) / 2, (y0 + y1) / 2, { w: x1 - x0, d: y1 - y0 });
+    if (!item) return;
+    item.z = ++zcPiso;
+    plan.items.push(item);
+  };
+  piso('piso-madeira', 0, 0, 560, 470);
+  piso('piso-porcelanato', 0, 470, 560, 780);
+  piso('piso-madeira', 560, 0, 1100, 340);
+  piso('piso-madeira', 560, 340, 1100, 450);
+  piso('piso-madeira', 560, 450, 830, 780);
+  piso('piso-ceramica', 830, 450, 1100, 780);
+  piso('piso-concreto', 1180, 60, 1680, 700);
 
   const op = (
     wallId: string,

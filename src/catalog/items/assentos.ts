@@ -244,4 +244,87 @@ export const assentos: FurnitureDef[] = [
       line(ctx, cx - 16, d - 16, cx + 16, d - 16, colors.accent, 2);
     },
   },
+  {
+    id: 'sofa-modular-l',
+    name: 'Sofá modular em L',
+    category: 'assentos',
+    w: 240,
+    d: 170,
+    keywords: ['sofa', 'modular', 'L', 'chaise', 'sala'],
+    colors: { main: '#8f9a76' },
+    colorKeys: [{ key: 'main', label: 'Estofado', palette: 'fabric' }],
+    draw: ({ ctx, w, d, colors }) => {
+      const dark = shade(colors.main, -0.15);
+      const light = shade(colors.main, 0.1);
+      const mainD = d * 0.62;
+      box(ctx, 0, 0, w, mainD, 9, colors.main, alpha(shade(colors.main, -0.5), 0.42), 1.6);
+      box(ctx, 3, 2, w - 6, 21, 6, dark, alpha(shade(colors.main, -0.55), 0.3), 1.2);
+      const arm = 15;
+      box(ctx, 2, 18, arm, mainD - 21, 5, dark, alpha(shade(colors.main, -0.55), 0.3), 1.2);
+      box(ctx, w - 2 - arm, 18, arm, d - 21, 5, dark, alpha(shade(colors.main, -0.55), 0.3), 1.2);
+      const x0 = arm + 4;
+      const x1 = w - 60;
+      const sw = (x1 - x0) / 2;
+      for (let i = 0; i < 2; i++) {
+        cushion(ctx, x0 + i * sw + 1.5, 24, sw - 3, mainD - 29, 5, light);
+      }
+      box(ctx, w - 58, 2, 56, d - 4, 8, colors.main, alpha(shade(colors.main, -0.5), 0.42), 1.6);
+      cushion(ctx, w - 54, 24, 48, d - 34, 5, light);
+    },
+  },
+  {
+    id: 'poltrona-egg',
+    name: 'Poltrona egg',
+    category: 'assentos',
+    w: 90,
+    d: 90,
+    keywords: ['poltrona', 'egg', 'giratória', 'leitura', 'design'],
+    colors: { main: '#c07f63', accent: '#b8bcc1' },
+    colorKeys: [
+      { key: 'main', label: 'Concha', palette: 'fabric' },
+      { key: 'accent', label: 'Base', palette: 'metal' },
+    ],
+    draw: ({ ctx, w, d, colors }) => {
+      const cx = w / 2;
+      const cy = d / 2;
+      const r = Math.min(w, d) / 2 - 3;
+      for (let i = 0; i < 4; i++) {
+        const a = (i / 4) * Math.PI * 2 + Math.PI / 4;
+        line(ctx, cx, cy, cx + Math.cos(a) * r, cy + Math.sin(a) * r, colors.accent, 2.6);
+      }
+      circle(ctx, cx, cy, 4, shade(colors.accent, -0.2), null);
+      circle(ctx, cx, cy, r - 8, colors.main, alpha(shade(colors.main, -0.5), 0.42), 1.6);
+      circle(ctx, cx, cy - 4, r * 0.55, null, alpha(shade(colors.main, 0.3), 0.5), 1.1);
+      cushion(ctx, cx - 16, cy - 2, 32, 20, 8, shade(colors.main, 0.1));
+    },
+  },
+  {
+    id: 'banqueta-industrial',
+    name: 'Banqueta industrial',
+    category: 'assentos',
+    w: 45,
+    d: 45,
+    keywords: ['banqueta', 'industrial', 'metal', 'ilha', 'bar'],
+    colors: { main: '#5d6169', accent: '#3b3f45' },
+    colorKeys: [
+      { key: 'main', label: 'Assento', palette: 'metal' },
+      { key: 'accent', label: 'Estrutura', palette: 'metal' },
+    ],
+    draw: ({ ctx, w, d, colors }) => {
+      const cx = w / 2;
+      const cy = d / 2;
+      const r = Math.min(w, d) / 2 - 3;
+      circle(ctx, cx, cy, r + 2.5, null, colors.accent, 1.6);
+      circle(ctx, cx, cy, r, colors.main, alpha('#1d2024', 0.4), 1.4);
+      circle(ctx, cx, cy, r * 0.5, null, alpha('#ffffff', 0.25), 1.1);
+      for (const [x, y] of [
+        [7, 7],
+        [w - 7, 7],
+        [7, d - 7],
+        [w - 7, d - 7],
+      ]) {
+        circle(ctx, x, y, 2.2, colors.accent, null);
+      }
+    },
+  },
 ];

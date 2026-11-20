@@ -16,7 +16,6 @@ import { beginWallResize, endWallResize, updateWallResize } from './wallResize';
 import type { WallResizeSession } from './wallResize';
 import { hitTest, marqueeIds } from './selection';
 import { createWallTool } from './wallTool';
-import { createRoomTool } from './roomTool';
 import { createMeasureTool } from './measureTool';
 import { createOpeningTool } from './openingTool';
 import { createCalibrateTool } from './calibrateTool';
@@ -54,7 +53,6 @@ export class PointerController {
     this.renderer = renderer;
 
     this.tools.set('wall', createWallTool({ store, notify }));
-    this.tools.set('room', createRoomTool({ store, notify }));
     this.tools.set('measure', createMeasureTool({ store, notify }));
     this.tools.set('door', createOpeningTool({ store, notify }, 'porta'));
     this.tools.set('window', createOpeningTool({ store, notify }, 'janela'));

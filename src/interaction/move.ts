@@ -20,7 +20,6 @@ export interface MoveSession {
   before: Plan;
   items: ItemSnapshot[];
   walls: { id: string; a: Vec2; b: Vec2 }[];
-  rooms: { id: string; points: Vec2[] }[];
   openingIds: string[];
   moved: boolean;
 }
@@ -28,14 +27,12 @@ export interface MoveSession {
 export function beginMove(store: Store, world: Vec2): MoveSession {
   const items = store.selectedItems().filter((i) => !i.locked);
   const walls = store.selectedWalls();
-  const rooms = store.selectedRooms();
   const openings = store.selectedOpenings();
   return {
     start: world,
     before: store.snapshot(),
     items: items.map((i) => ({ id: i.id, x: i.x, y: i.y, w: i.w, d: i.d, rot: i.rot })),
     walls: walls.map((w) => ({ id: w.id, a: { ...w.a }, b: { ...w.b } })),
-    rooms: rooms.map((r) => ({ id: r.id, points: r.points.map((p) => ({ ...p })) })),
     openingIds: openings.map((o) => o.id),
     moved: false,
   };
@@ -64,7 +61,6 @@ function sessionBounds(session: MoveSession): Rect | null {
     );
   }
   for (const wall of session.walls) rect = unionRect(rect, boxOfPoints([wall.a, wall.b]));
-  for (const room of session.rooms) rect = unionRect(rect, boxOfPoints(room.points));
   return rect;
 }
 
@@ -75,7 +71,6 @@ export function updateMove(store: Store, session: MoveSession, world: Vec2, shif
   const onlyOpenings =
     session.items.length === 0 &&
     session.walls.length === 0 &&
-    session.rooms.length === 0 &&
     session.openingIds.length > 0;
 
   if (onlyOpenings) {
@@ -103,7 +98,6 @@ export function updateMove(store: Store, session: MoveSession, world: Vec2, shif
     const ids = new Set<string>([
       ...session.items.map((i) => i.id),
       ...session.walls.map((w) => w.id),
-      ...session.rooms.map((r) => r.id),
     ]);
     const snapped = computeMoveSnap(store, ids, bbox, raw);
     offset = snapped.offset;
@@ -121,11 +115,6 @@ export function updateMove(store: Store, session: MoveSession, world: Vec2, shif
     if (!wall) continue;
     wall.a = { x: entry.a.x + offset.x, y: entry.a.y + offset.y };
     wall.b = { x: entry.b.x + offset.x, y: entry.b.y + offset.y };
-  }
-  for (const entry of session.rooms) {
-    const room = store.findRoom(entry.id);
-    if (!room) continue;
-    room.points = entry.points.map((p) => ({ x: p.x + offset.x, y: p.y + offset.y }));
   }
   store.setGuides(guides);
   store.emit();

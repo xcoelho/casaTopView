@@ -103,9 +103,6 @@ export function attachKeyboard(store: Store, actions: KeyboardActions): () => vo
       case 'p':
         store.setTool('wall');
         break;
-      case 'c':
-        store.setTool('room');
-        break;
       case 't':
         store.setTool('door');
         break;

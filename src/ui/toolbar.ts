@@ -27,7 +27,6 @@ export interface ToolbarHandle {
 const TOOLS: { id: ToolId; label: string; icon: string; key: string }[] = [
   { id: 'select', label: 'Selecionar', icon: 'select', key: 'V' },
   { id: 'wall', label: 'Parede', icon: 'wall', key: 'P' },
-  { id: 'room', label: 'Cômodo', icon: 'room', key: 'C' },
   { id: 'door', label: 'Porta', icon: 'door', key: 'T' },
   { id: 'window', label: 'Janela', icon: 'window', key: 'J' },
   { id: 'measure', label: 'Medir', icon: 'ruler', key: 'M' },

@@ -10,13 +10,12 @@ import { itemBounds } from './document';
 import { boundsOfPoints, obbCorners, unionRect } from './geometry';
 import { createItem, getDef } from '../catalog/registry';
 
-export type ToolId = 'select' | 'wall' | 'room' | 'door' | 'window' | 'measure' | 'calibrate';
+export type ToolId = 'select' | 'wall' | 'door' | 'window' | 'measure' | 'calibrate';
 
 export type EntityKind = 'item' | 'wall' | 'room' | 'opening';
 
 export type Overlay =
   | { type: 'wall'; a: Vec2; b: Vec2; angle: number; length: number; valid: boolean }
-  | { type: 'room'; points: Vec2[]; cursor: Vec2 | null }
   | { type: 'measure'; a: Vec2; b: Vec2 }
   | { type: 'marquee'; rect: Rect }
   | { type: 'ghost'; defId: string; x: number; y: number; rot: number; w: number; d: number }
@@ -39,9 +38,6 @@ export class Store {
   cursor: Vec2 | null = null;
   hover: Id | null = null;
   spaceHeld = false;
-  /** nome padrão do próximo cômodo criado */
-  roomName = 'Ambiente';
-  roomFloor: Room['floor'] = 'madeira';
   clipboard: Item[] = [];
 
   /** Emitido quando o documento muda de fato (autosave, histórico, inspetor). */
@@ -220,10 +216,6 @@ export class Store {
     return this.doc.walls.filter((w) => this.selection.includes(w.id));
   }
 
-  selectedRooms(): Room[] {
-    return this.doc.rooms.filter((r) => this.selection.includes(r.id));
-  }
-
   selectedOpenings(): Opening[] {
     return this.doc.openings.filter((o) => this.selection.includes(o.id));
   }
@@ -243,10 +235,6 @@ export class Store {
           boundsOfPoints([wall.a, wall.b]),
         );
         continue;
-      }
-      const room = this.findRoom(id);
-      if (room) {
-        rect = unionRect(rect, boundsOfPoints(room.points));
       }
     }
     return rect;
@@ -309,21 +297,6 @@ export class Store {
     });
     this.select([opening.id]);
     return opening;
-  }
-
-  insertRoom(points: Vec2[], name: string, floor: Room['floor']): Room | null {
-    if (points.length < 3) return null;
-    const room: Room = {
-      id: `rm_${Math.random().toString(36).slice(2, 9)}`,
-      points,
-      name,
-      floor,
-    };
-    this.tx('Criar cômodo', () => {
-      this.doc.rooms.push(room);
-    });
-    this.select([room.id]);
-    return room;
   }
 
   insertWall(a: Vec2, b: Vec2, thickness: number): Wall | null {
@@ -429,9 +402,8 @@ export class Store {
   nudgeSelection(dx: number, dy: number): void {
     const items = this.selectedItems().filter((i) => !i.locked);
     const walls = this.selectedWalls();
-    const rooms = this.selectedRooms();
     const openings = this.selectedOpenings();
-    if (!items.length && !walls.length && !rooms.length && !openings.length) return;
+    if (!items.length && !walls.length && !openings.length) return;
     this.tx('Mover', () => {
       for (const item of items) {
         item.x += dx;
@@ -440,9 +412,6 @@ export class Store {
       for (const wall of walls) {
         wall.a = { x: wall.a.x + dx, y: wall.a.y + dy };
         wall.b = { x: wall.b.x + dx, y: wall.b.y + dy };
-      }
-      for (const room of rooms) {
-        room.points = room.points.map((p) => ({ x: p.x + dx, y: p.y + dy }));
       }
       for (const opening of openings) {
         const wall = this.findWall(opening.wallId);

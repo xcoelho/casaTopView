@@ -195,4 +195,44 @@ export const cozinha: FurnitureDef[] = [
       box(ctx, w * 0.2, 6, 7, d - 12, 1, alpha('#d8bb92', 0.85), alpha('#3a2a1c', 0.3), 1);
     },
   },
+  {
+    id: 'geladeira-side-by-side',
+    name: 'Geladeira side by side',
+    category: 'cozinha',
+    w: 95,
+    d: 75,
+    keywords: ['geladeira', 'side by side', 'inox', 'dispenser', 'cozinha'],
+    colors: { main: '#d9dde1', accent: '#3b3f45' },
+    colorKeys: [
+      { key: 'main', label: 'Corpo', palette: 'metal' },
+      { key: 'accent', label: 'Detalhes', palette: 'metal' },
+    ],
+    draw: ({ ctx, w, d, colors }) => {
+      box(ctx, 0, 0, w, d, 5, colors.main, alpha('#5f666d', 0.45), 1.6);
+      line(ctx, w / 2, 3, w / 2, d - 3, alpha('#5f666d', 0.5), 1.6);
+      metalBar(ctx, w / 2 - 7, 6, 3.4, 26, colors.accent, 1.6);
+      metalBar(ctx, w / 2 + 3.6, 6, 3.4, 26, colors.accent, 1.6);
+      box(ctx, w * 0.08, d - 14, w * 0.34, 10, 2, colors.accent, null);
+      box(ctx, w / 2 + 10, 8, 16, 18, 2, null, alpha('#5f666d', 0.4), 1.2);
+    },
+  },
+  {
+    id: 'geladeira-retro',
+    name: 'Geladeira retrô',
+    category: 'cozinha',
+    w: 70,
+    d: 70,
+    keywords: ['geladeira', 'retro', 'colorida', 'cozinha'],
+    colors: { main: '#c07f63', accent: '#d9dde1' },
+    colorKeys: [
+      { key: 'main', label: 'Corpo', palette: 'paint' },
+      { key: 'accent', label: 'Detalhes', palette: 'metal' },
+    ],
+    draw: ({ ctx, w, d, colors }) => {
+      box(ctx, 0, 0, w, d, 9, colors.main, alpha(shade(colors.main, -0.5), 0.45), 1.6);
+      line(ctx, 5, d * 0.32, w - 5, d * 0.32, alpha('#ffffff', 0.35), 1.4);
+      metalBar(ctx, w - 12, 6, 3.4, d * 0.56, colors.accent, 1.6);
+      circle(ctx, w / 2 - 6, d * 0.2, 2.4, colors.accent, null);
+    },
+  },
 ];

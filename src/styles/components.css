@@ -326,6 +326,30 @@ input[type='range'] {
   background: var(--accent-line);
 }
 
+.cat-card.selected {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 1.5px var(--accent-soft);
+}
+
+.catalog-preview {
+  flex: 0 0 auto;
+  border-top: 1px solid var(--line);
+  background: var(--panel);
+  padding: 10px 12px 12px;
+}
+
+.catalog-preview-label {
+  display: block;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--ink-faint);
+  margin-bottom: 8px;
+}
+
+.catalog-preview .insp-preview {
+  height: 190px;
+}
+
 .catalog-empty {
   padding: 24px 16px;
   text-align: center;

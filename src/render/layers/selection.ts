@@ -158,10 +158,6 @@ export function drawSelection(
         6,
       );
     }
-    const room = store.findRoom(store.hover);
-    if (room) {
-      strokePolygon(ctx, room.points, cam, 'rgba(15, 118, 110, 0.35)', 1.5, [4, 4]);
-    }
     const opening = store.findOpening(store.hover);
     if (opening) {
       const wall = store.findWall(opening.wallId);
@@ -250,20 +246,6 @@ export function drawSelection(
       ctx.stroke();
     }
     ctx.restore();
-  }
-
-  for (const room of store.selectedRooms()) {
-    strokePolygon(ctx, room.points, cam, THEME.accent, 1.6, [6, 4]);
-    for (const point of room.points) {
-      const p = worldToScreen(cam, point);
-      ctx.beginPath();
-      ctx.arc(p.x, p.y, 3.5, 0, Math.PI * 2);
-      ctx.fillStyle = '#ffffff';
-      ctx.fill();
-      ctx.strokeStyle = THEME.accent;
-      ctx.lineWidth = 1.4;
-      ctx.stroke();
-    }
   }
 
   for (const opening of store.selectedOpenings()) {

@@ -279,4 +279,90 @@ export const armarios: FurnitureDef[] = [
       }
     },
   },
+  {
+    id: 'aparador-mid-century',
+    name: 'Aparador mid-century',
+    category: 'armarios',
+    w: 180,
+    d: 45,
+    keywords: ['aparador', 'mid-century', 'ripado', 'sala', 'retrô'],
+    colors: { main: '#c19a6b', accent: '#c2a469' },
+    colorKeys: [
+      { key: 'main', label: 'Madeira', palette: 'wood' },
+      { key: 'accent', label: 'Puxadores', palette: 'metal' },
+    ],
+    draw: ({ ctx, w, d, colors }) => {
+      box(ctx, 0, 0, w, d, 3, colors.main, alpha('#3a2a1c', 0.42), 1.6);
+      grain(ctx, 1, 1, w - 2, d - 2, colors.main, 12);
+      const doors = 4;
+      const dw = w / doors;
+      for (let i = 1; i < doors; i++) {
+        line(ctx, dw * i, 2, dw * i, d - 2, alpha('#3a2a1c', 0.32), 1.3);
+      }
+      for (let i = 0; i < doors; i++) {
+        for (let s = 0; s < 3; s++) {
+          line(ctx, dw * i + 8 + s * 6, 6, dw * i + 8 + s * 6, d - 6, alpha('#3a2a1c', 0.18), 1);
+        }
+      }
+      for (let i = 0; i < doors; i++) {
+        const x = dw * i + dw / 2;
+        const handleX = i % 2 === 0 ? x + dw / 2 - 7 : x - dw / 2 + 7;
+        line(ctx, handleX, d * 0.35, handleX, d * 0.65, colors.accent, 2.2);
+      }
+    },
+  },
+  {
+    id: 'cristaleira',
+    name: 'Cristaleira',
+    category: 'armarios',
+    w: 120,
+    d: 45,
+    keywords: ['cristaleira', 'louças', 'vidro', 'sala', 'jantar'],
+    colors: { main: '#8a6142', accent: '#cfe3e8' },
+    colorKeys: [
+      { key: 'main', label: 'Madeira', palette: 'wood' },
+      { key: 'accent', label: 'Vidro', palette: 'glass' },
+    ],
+    draw: ({ ctx, w, d, colors }) => {
+      box(ctx, 0, 0, w, d, 3, colors.main, alpha('#3a2a1c', 0.42), 1.6);
+      box(ctx, 4, 4, w - 8, d - 8, 2, alpha(colors.accent, 0.55), alpha(shade(colors.accent, -0.5), 0.4), 1.2);
+      line(ctx, w / 2, 4, w / 2, d - 4, colors.main, 2.4);
+      for (const x of [w * 0.28, w * 0.72]) {
+        circle(ctx, x, d * 0.35, 4.5, alpha('#f1efe8', 0.9), alpha('#5a5346', 0.3), 1);
+      }
+      circle(ctx, w * 0.5, d * 0.7, 3, alpha('#dfeef2', 0.8), alpha('#5a5346', 0.3), 1);
+      line(ctx, 4, d / 2, w - 4, d / 2, alpha(colors.main, 0.4), 1);
+    },
+  },
+  {
+    id: 'estante-industrial',
+    name: 'Estante industrial',
+    category: 'armarios',
+    w: 100,
+    d: 40,
+    keywords: ['estante', 'industrial', 'metal', 'livros', 'prateleira'],
+    colors: { main: '#c19a6b', accent: '#3b3f45' },
+    colorKeys: [
+      { key: 'main', label: 'Prateleiras', palette: 'wood' },
+      { key: 'accent', label: 'Estrutura', palette: 'metal' },
+    ],
+    draw: ({ ctx, w, d, colors }) => {
+      box(ctx, 0, 0, w, d, 2, colors.main, alpha('#3a2a1c', 0.42), 1.5);
+      for (let i = 1; i < 4; i++) {
+        line(ctx, 2, (d / 4) * i, w - 2, (d / 4) * i, colors.accent, 2);
+      }
+      for (const x of [3, w - 3]) {
+        line(ctx, x, 2, x, d - 2, colors.accent, 2.6);
+      }
+      line(ctx, 3, 2, w - 3, d - 2, alpha(colors.accent, 0.5), 1.2);
+      line(ctx, w - 3, 2, 3, d - 2, alpha(colors.accent, 0.5), 1.2);
+      const bookColors = ['#b46a55', '#5b7c8d', '#8f9a76', '#c2a469'];
+      for (let i = 0; i < 4; i++) {
+        ctx.fillStyle = bookColors[i];
+        ctx.globalAlpha = 0.72;
+        ctx.fillRect(8 + i * 5, 4, 3.6, d / 4 - 6);
+        ctx.globalAlpha = 1;
+      }
+    },
+  },
 ];
