@@ -1,9 +1,0 @@
-{
-  "model": "meta/muse-spark-1.3-contributor",
-  "featureModels": {
-    "planning": "meta/muse-spark-1.3-contributor",
-    "implementation": "meta/muse-spark-1.3-contributor",
-    "subagents": "meta/muse-ember"
-  },
-  "subagentMaxTurns": 200
-}
