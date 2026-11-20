@@ -2488,6 +2488,7 @@ export function buildFurniture(item: Item): THREE.Group {
   const group = new THREE.Group();
   group.position.set(item.x, 0, item.y);
   group.rotation.y = -item.rot * DEG;
+  group.userData.itemId = item.id;
 
   const { height, base } = itemHeight(item.defId);
   const main = item.colors.main ?? '#c9a37a';

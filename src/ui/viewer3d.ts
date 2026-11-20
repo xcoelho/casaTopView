@@ -52,7 +52,7 @@ export function open3DViewer({ shell, store }: Viewer3DOptions): void {
   const hint = el(
     'div',
     { class: 'viewer3d-hint' },
-    'Arraste para girar · botão direito/Shift para mover · Rolagem para aproximar',
+    'Clique seleciona · Arraste o móvel para mover · Duplo-clique centraliza · Arraste no vazio para girar · Rolagem para aproximar',
   );
 
   const root = el('div', { class: 'viewer3d' }, host, head, hint);
@@ -60,7 +60,7 @@ export function open3DViewer({ shell, store }: Viewer3DOptions): void {
   shell.stage.append(root);
 
   try {
-    view = createView3D(host, store.doc);
+    view = createView3D(host, store.doc, store);
     wallsButton.disabled = false;
     fitButton.disabled = false;
     wallsButton.classList.add('active');

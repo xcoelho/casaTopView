@@ -3,9 +3,11 @@ import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import type { Plan } from '../core/document';
 import { planBounds } from '../core/document';
+import type { Store } from '../core/store';
 import { buildFloors, buildWalls } from './architecture';
 import { applyRealisticEnvironment } from './env';
 import { buildFurniture } from './furniture';
+import { attachItemDrag, attachItemFocus, attachItemPicking, attachSelectionHighlight } from './interaction3d';
 
 const DEG = Math.PI / 180;
 
@@ -16,7 +18,7 @@ export interface View3DHandle {
   dispose(): void;
 }
 
-export function createView3D(container: HTMLElement, initial: Plan): View3DHandle {
+export function createView3D(container: HTMLElement, initial: Plan, store: Store): View3DHandle {
   const renderer = new THREE.WebGLRenderer({ antialias: true });
   renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
   renderer.domElement.className = 'viewer3d-canvas';
@@ -61,6 +63,7 @@ export function createView3D(container: HTMLElement, initial: Plan): View3DHandl
   let world: THREE.Group | null = null;
   let walls: THREE.Object3D | null = null;
   let wallsVisible = true;
+  let groupsById = new Map<string, THREE.Group>();
 
   function configureSun(): void {
     const bounds = planBounds(plan) ?? { x: -500, y: -350, w: 1000, h: 700 };
@@ -93,8 +96,14 @@ export function createView3D(container: HTMLElement, initial: Plan): View3DHandl
     walls.visible = wallsVisible;
     world.add(buildFloors(next), walls);
 
+    // Índice id -> grupo apenas para itens visíveis (paredes/pisos nunca entram).
+    groupsById = new Map<string, THREE.Group>();
     for (const item of next.items) {
-      if (!item.hidden) world.add(buildFurniture(item));
+      if (!item.hidden) {
+        const g = buildFurniture(item);
+        world.add(g);
+        groupsById.set(item.id, g);
+      }
     }
 
     scene.add(world);
@@ -142,6 +151,32 @@ export function createView3D(container: HTMLElement, initial: Plan): View3DHandl
   resize();
   fit();
   loop();
+  const disposePicking = attachItemPicking({
+    canvas: renderer.domElement,
+    camera,
+    groups: () => groupsById,
+    store,
+  });
+  const highlight = attachSelectionHighlight({
+    scene,
+    groups: () => groupsById,
+    store,
+  });
+  const disposeFocus = attachItemFocus({
+    canvas: renderer.domElement,
+    camera,
+    controls,
+    groups: () => groupsById,
+    store,
+  });
+  const disposeDrag = attachItemDrag({
+    canvas: renderer.domElement,
+    camera,
+    controls,
+    groups: () => groupsById,
+    store,
+    highlight,
+  });
   // Garante medidas corretas no primeiro frame, quando o painel acabou de entrar no DOM.
   requestAnimationFrame(() => {
     resize();
@@ -151,6 +186,8 @@ export function createView3D(container: HTMLElement, initial: Plan): View3DHandl
   return {
     update: (next) => {
       rebuild(next);
+      // rebuild() recria os grupos: o contorno precisa reapontar para o novo grupo.
+      highlight.refresh();
     },
     setWalls: (visible) => {
       wallsVisible = visible;
@@ -161,6 +198,10 @@ export function createView3D(container: HTMLElement, initial: Plan): View3DHandl
       cancelAnimationFrame(raf);
       observer.disconnect();
       window.removeEventListener('resize', resize);
+      disposePicking();
+      highlight.dispose();
+      disposeFocus();
+      disposeDrag();
       controls.dispose();
       if (world) scene.remove(world);
       disposeEnv();
