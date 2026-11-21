@@ -139,6 +139,8 @@ function buildOpening(
     boxAt(frame, 14, 5, head - sill, width / 2 - 7, 5, sill, curtain, 1, 0, 'matte');
     const rod = cylinderAt(frame, 1.2, width + 12, 0, 5, head + 2, '#8a867d');
     rod.rotation.z = Math.PI / 2;
+    // Deitada, o centro precisa ficar em head + 2 (cylinderAt soma h/2).
+    rod.position.y = head + 2;
   }
 }
 

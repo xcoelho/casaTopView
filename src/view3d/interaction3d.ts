@@ -2,6 +2,7 @@
 import * as THREE from 'three';
 import type { Plan } from '../core/document';
 import type { Store } from '../core/store';
+import { clampElevation, isElevatable, itemHeight, itemElevation } from './furniture';
 
 export interface AttachItemPickingOptions {
   canvas: HTMLCanvasElement;
@@ -349,7 +350,8 @@ export function attachItemDrag(opts: AttachItemDragOptions): () => void {
     item.y = nextZ;
     const group = groups().get(dragId);
     if (group) {
-      group.position.set(nextX, 0, nextZ);
+      // Mantém a altura escolhida (elevation); o gesto move apenas no plano do piso.
+      group.position.set(nextX, group.position.y, nextZ);
       // O contorno vem de um BoxHelper: sem isto ele ficaria parado no lugar de origem.
       opts.highlight.update();
     }
@@ -400,7 +402,8 @@ export function attachItemDrag(opts: AttachItemDragOptions): () => void {
   // Rede de segurança: o ponteiro pode ser solto fora do canvas.
   window.addEventListener('pointerup', onPointerUp);
   window.addEventListener('pointercancel', onPointerCancel);
-  window.addEventListener('keydown', onKeyDown);
+  // Captura: vence o Escape global (que limparia a seleção) e o que fecha o painel.
+  window.addEventListener('keydown', onKeyDown, true);
   return () => {
     canvas.removeEventListener('pointerdown', onPointerDown);
     canvas.removeEventListener('pointermove', onPointerMove);
@@ -408,11 +411,348 @@ export function attachItemDrag(opts: AttachItemDragOptions): () => void {
     canvas.removeEventListener('pointercancel', onPointerCancel);
     window.removeEventListener('pointerup', onPointerUp);
     window.removeEventListener('pointercancel', onPointerCancel);
-    window.removeEventListener('keydown', onKeyDown);
+    window.removeEventListener('keydown', onKeyDown, true);
     // Dispose com gesto ativo: desfaz a posição mutada (sem passo de histórico).
     if (dragging && before) store.setDoc(before, false);
     releaseCapture();
     releaseControls();
     resetState();
+  };
+}
+
+export interface AttachElevationHandleOptions {
+  canvas: HTMLCanvasElement;
+  camera: THREE.PerspectiveCamera;
+  scene: THREE.Scene;
+  controls: { enabled: boolean };
+  groups: () => Map<string, THREE.Group>;
+  store: Store;
+  /** Contorno da seleção: repassado para acompanhar o arrasto vertical. */
+  highlight: { update: () => void };
+}
+
+export interface ElevationHandle {
+  /** Reaponta a alça depois de um rebuild da cena ou de mudar a seleção. */
+  refresh: () => void;
+  /** Mantém a alça legível em qualquer zoom (chamado a cada frame). */
+  tick: () => void;
+  dispose: () => void;
+}
+
+const HANDLE_GAP = 16;
+const HANDLE_COLOR = 0x0f766e;
+const DEG = Math.PI / 180;
+/** Altura total do desenho da alça, em cm, antes da escala de tela. */
+const HANDLE_DRAW_HEIGHT = 47;
+const HANDLE_PIXELS = 46;
+
+/**
+ * Alça vertical para itens suspensos: aparece ao lado do único item selecionado
+ * e arrasta a altura da base entre o chão e o teto. Escreve direto no item
+ * durante o gesto e gera um único passo 'Altura' no pointerup.
+ */
+export function attachElevationHandle(opts: AttachElevationHandleOptions): ElevationHandle {
+  const { canvas, camera, scene, controls, groups, store } = opts;
+  const raycaster = new THREE.Raycaster();
+  const pointer = new THREE.Vector2();
+
+  const gizmo = new THREE.Group();
+  gizmo.visible = false;
+  scene.add(gizmo);
+
+  const arrowMat = new THREE.MeshBasicMaterial({
+    color: HANDLE_COLOR,
+    depthTest: false,
+    depthWrite: false,
+    transparent: true,
+    opacity: 0.95,
+  });
+  const knobMat = new THREE.MeshBasicMaterial({
+    color: 0xf8faf9,
+    depthTest: false,
+    depthWrite: false,
+  });
+  const ringMat = new THREE.MeshBasicMaterial({
+    color: HANDLE_COLOR,
+    depthTest: false,
+    depthWrite: false,
+  });
+
+  const shaft = new THREE.Mesh(new THREE.CylinderGeometry(1.1, 1.1, 34, 10), arrowMat);
+  const topArrow = new THREE.Mesh(new THREE.ConeGeometry(3.8, 7, 12), arrowMat);
+  topArrow.position.y = 20;
+  const bottomArrow = new THREE.Mesh(new THREE.ConeGeometry(3.8, 7, 12), arrowMat);
+  bottomArrow.position.y = -20;
+  bottomArrow.rotation.z = Math.PI;
+  const knob = new THREE.Mesh(new THREE.SphereGeometry(5.2, 18, 14), knobMat);
+  const ring = new THREE.Mesh(new THREE.TorusGeometry(7.2, 1.2, 8, 28), ringMat);
+  // Área de clique maior que o desenho: esfera invisível, mas ainda raycastável.
+  const hitArea = new THREE.Mesh(
+    new THREE.SphereGeometry(16, 12, 10),
+    new THREE.MeshBasicMaterial({ transparent: true, opacity: 0, depthWrite: false }),
+  );
+
+  for (const mesh of [shaft, topArrow, bottomArrow, knob, ring, hitArea]) {
+    mesh.renderOrder = 1000;
+    gizmo.add(mesh);
+  }
+
+  let currentId: string | null = null;
+  let dragging = false;
+  let moved = false;
+  let pointerId: number | null = null;
+  let dragId: string | null = null;
+  let before: Plan | null = null;
+  let docAtDown: Plan | null = null;
+  let startElevation = 0;
+  let modelHeight = 0;
+  let downY = 0;
+  let perPixel = 1;
+  let capturedHere = false;
+  let controlsWasEnabled = true;
+  let suppressClick = false;
+
+  function centerOf(): THREE.Vector3 {
+    return gizmo.position;
+  }
+
+  function hitsGizmo(event: { clientX: number; clientY: number }): boolean {
+    const rect = canvas.getBoundingClientRect();
+    if (!rect.width || !rect.height) return false;
+    pointer.set(
+      ((event.clientX - rect.left) / rect.width) * 2 - 1,
+      -((event.clientY - rect.top) / rect.height) * 2 + 1,
+    );
+    raycaster.setFromCamera(pointer, camera);
+    return raycaster.intersectObject(gizmo, true).length > 0;
+  }
+
+  /** Esconde a alça quando não há exatamente um suspenso selecionado. */
+  function refresh(): void {
+    if (dragging) return;
+    currentId = null;
+    gizmo.visible = false;
+    if (store.selection.length !== 1) return;
+    const item = store.findItem(store.selection[0]);
+    if (!item || item.hidden || item.locked || !isElevatable(item.defId)) return;
+    const group = groups().get(item.id);
+    if (!group) return;
+    currentId = item.id;
+    const height = itemHeight(item.defId).height;
+    // Ao lado do móvel (eixo local +x), na altura média: não cobre o modelo.
+    const offset = item.w / 2 + HANDLE_GAP;
+    const angle = item.rot * DEG;
+    gizmo.position.set(
+      group.position.x + Math.cos(angle) * offset,
+      itemElevation(item) + height / 2,
+      group.position.z + Math.sin(angle) * offset,
+    );
+    gizmo.visible = true;
+  }
+
+  /** Escala em função da distância para a alça manter ~46 px de altura. */
+  function tick(): void {
+    if (!gizmo.visible) return;
+    const rect = canvas.getBoundingClientRect();
+    if (!rect.height) return;
+    const distance = Math.max(1, camera.position.distanceTo(gizmo.position));
+    const worldPerPixel = (2 * Math.tan((camera.fov * Math.PI) / 360) * distance) / rect.height;
+    const scale = (worldPerPixel * HANDLE_PIXELS) / HANDLE_DRAW_HEIGHT;
+    gizmo.scale.setScalar(Math.min(3, Math.max(0.5, scale)));
+  }
+
+  function releaseCapture(): void {
+    if (!capturedHere || pointerId === null) return;
+    capturedHere = false;
+    const id = pointerId;
+    try {
+      if (canvas.hasPointerCapture(id)) canvas.releasePointerCapture(id);
+    } catch {
+      /* o navegador pode já ter solto a captura. */
+    }
+  }
+
+  function releaseControls(): void {
+    controls.enabled = controlsWasEnabled;
+  }
+
+  function resetState(): void {
+    dragging = false;
+    moved = false;
+    pointerId = null;
+    dragId = null;
+    before = null;
+    docAtDown = null;
+    capturedHere = false;
+  }
+
+  function onPointerDownCapture(event: PointerEvent): void {
+    // Outro pointerdown invalida um clique pendente de suprimir.
+    suppressClick = false;
+    if (dragging) return;
+    if (event.button !== 0 || !gizmo.visible) return;
+    if (!hitsGizmo(event)) return;
+
+    const id = currentId;
+    if (!id) return;
+    const item = store.findItem(id);
+    if (!item || item.hidden || item.locked) return;
+
+    // Captura antes do OrbitControls: sem órbita enquanto a alça é arrastada.
+    event.preventDefault();
+    event.stopImmediatePropagation();
+    suppressClick = true;
+
+    dragId = id;
+    docAtDown = store.doc;
+    startElevation = itemElevation(item);
+    modelHeight = itemHeight(item.defId).height;
+    downY = event.clientY;
+    const rect = canvas.getBoundingClientRect();
+    const distance = Math.max(1, camera.position.distanceTo(centerOf()));
+    perPixel = (2 * Math.tan((camera.fov * Math.PI) / 360) * distance) / Math.max(1, rect.height);
+    pointerId = event.pointerId;
+    dragging = true;
+    moved = false;
+    before = null;
+    controlsWasEnabled = controls.enabled;
+    controls.enabled = false;
+    if (!canvas.hasPointerCapture(event.pointerId)) {
+      try {
+        canvas.setPointerCapture(event.pointerId);
+        capturedHere = true;
+      } catch {
+        /* sem captura o arrasto segue válido enquanto o ponteiro fica sobre o canvas. */
+      }
+    }
+  }
+
+  function onPointerMove(event: PointerEvent): void {
+    // Feedback de cursor quando só está passando por cima da alça.
+    if (!dragging) {
+      if (gizmo.visible && event.buttons === 0) {
+        canvas.style.cursor = hitsGizmo(event) ? 'ns-resize' : '';
+      }
+      return;
+    }
+    if (dragId === null) return;
+    if (pointerId !== null && event.pointerId !== pointerId) return;
+    if (event.buttons === 0) {
+      finishDrag(true);
+      return;
+    }
+    if (!moved) {
+      const dy = event.clientY - downY;
+      if (Math.abs(dy) < 2) return;
+      moved = true;
+      before = store.snapshot();
+    }
+    if (!before || store.doc !== docAtDown) {
+      releaseCapture();
+      releaseControls();
+      resetState();
+      return;
+    }
+    const item = store.findItem(dragId);
+    if (!item) return;
+
+    let delta = (downY - event.clientY) * perPixel;
+    const settings = store.doc.settings;
+    if (settings.snap) {
+      const grid = settings.grid > 0 ? settings.grid : 10;
+      delta = Math.round(delta / grid) * grid;
+    }
+    const next = clampElevation(Math.round(startElevation + delta), item.defId);
+    // item é a referência viva do store: escrever aqui evita tx por frame.
+    item.elevation = next;
+    const group = groups().get(dragId);
+    if (group) {
+      group.position.y = next;
+      opts.highlight.update();
+    }
+    gizmo.position.y = next + modelHeight / 2;
+    store.emit();
+  }
+
+  function onPointerUp(event: PointerEvent): void {
+    if (!dragging) return;
+    if (pointerId !== null && event.pointerId !== pointerId) return;
+    if (event.button !== 0) return;
+    finishDrag(true);
+  }
+
+  function finishDrag(commit: boolean): void {
+    if (!dragging) return;
+    const snapshot = before;
+    releaseCapture();
+    releaseControls();
+    resetState();
+    if (commit && snapshot) store.commit('Altura', snapshot);
+    // Sem snapshot nada mudou; se o doc trocou no meio, o gesto já foi abandonado.
+    refresh();
+  }
+
+  function onPointerCancel(): void {
+    finishDrag(false);
+  }
+
+  function onClickCapture(event: MouseEvent): void {
+    if (!suppressClick) return;
+    suppressClick = false;
+    // O clique sintético do arrasto não deve limpar a seleção no picking.
+    event.preventDefault();
+    event.stopImmediatePropagation();
+  }
+
+  function onKeyDown(event: KeyboardEvent): void {
+    if (event.key !== 'Escape' || !dragging) return;
+    // Registrado antes do Escape que fecha o painel em ui/viewer3d.ts.
+    event.stopImmediatePropagation();
+    event.preventDefault();
+    const snapshot = before;
+    releaseCapture();
+    releaseControls();
+    resetState();
+    if (snapshot) store.setDoc(snapshot, false);
+    refresh();
+  }
+
+  const offSelection = store.selectionChanged.on(refresh);
+  // Captura para vencer o listener do OrbitControls, que é registrado antes.
+  canvas.addEventListener('pointerdown', onPointerDownCapture, true);
+  canvas.addEventListener('pointermove', onPointerMove);
+  canvas.addEventListener('pointerup', onPointerUp);
+  canvas.addEventListener('pointercancel', onPointerCancel);
+  canvas.addEventListener('click', onClickCapture, true);
+  window.addEventListener('pointerup', onPointerUp);
+  window.addEventListener('pointercancel', onPointerCancel);
+  // Captura: vence o Escape global (que limparia a seleção) e o que fecha o painel.
+  window.addEventListener('keydown', onKeyDown, true);
+  refresh();
+
+  return {
+    refresh,
+    tick,
+    dispose: () => {
+      offSelection();
+      canvas.removeEventListener('pointerdown', onPointerDownCapture, true);
+      canvas.removeEventListener('pointermove', onPointerMove);
+      canvas.removeEventListener('pointerup', onPointerUp);
+      canvas.removeEventListener('pointercancel', onPointerCancel);
+      canvas.removeEventListener('click', onClickCapture, true);
+      window.removeEventListener('pointerup', onPointerUp);
+      window.removeEventListener('pointercancel', onPointerCancel);
+      window.removeEventListener('keydown', onKeyDown, true);
+      if (dragging && before) store.setDoc(before, false);
+      releaseCapture();
+      releaseControls();
+      resetState();
+      canvas.style.cursor = '';
+      scene.remove(gizmo);
+      for (const mesh of [shaft, topArrow, bottomArrow, knob, ring, hitArea]) {
+        mesh.geometry.dispose();
+        (mesh.material as THREE.Material).dispose();
+      }
+    },
   };
 }

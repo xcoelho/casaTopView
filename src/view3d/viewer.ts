@@ -7,7 +7,14 @@ import type { Store } from '../core/store';
 import { buildFloors, buildWalls } from './architecture';
 import { applyRealisticEnvironment } from './env';
 import { buildFurniture } from './furniture';
-import { attachItemDrag, attachItemFocus, attachItemPicking, attachSelectionHighlight } from './interaction3d';
+import {
+  attachElevationHandle,
+  attachItemDrag,
+  attachItemFocus,
+  attachItemPicking,
+  attachSelectionHighlight,
+  type ElevationHandle,
+} from './interaction3d';
 
 const DEG = Math.PI / 180;
 
@@ -141,9 +148,11 @@ export function createView3D(container: HTMLElement, initial: Plan, store: Store
   window.addEventListener('resize', resize);
 
   let raf = 0;
+  let elevationGizmo: ElevationHandle | null = null;
   function loop(): void {
     raf = requestAnimationFrame(loop);
     controls.update();
+    elevationGizmo?.tick();
     renderer.render(scene, camera);
   }
 
@@ -177,6 +186,15 @@ export function createView3D(container: HTMLElement, initial: Plan, store: Store
     store,
     highlight,
   });
+  elevationGizmo = attachElevationHandle({
+    canvas: renderer.domElement,
+    camera,
+    scene,
+    controls,
+    groups: () => groupsById,
+    store,
+    highlight,
+  });
   // Garante medidas corretas no primeiro frame, quando o painel acabou de entrar no DOM.
   requestAnimationFrame(() => {
     resize();
@@ -186,8 +204,9 @@ export function createView3D(container: HTMLElement, initial: Plan, store: Store
   return {
     update: (next) => {
       rebuild(next);
-      // rebuild() recria os grupos: o contorno precisa reapontar para o novo grupo.
+      // rebuild() recria os grupos: contorno e alça precisam reapontar para o novo grupo.
       highlight.refresh();
+      elevationGizmo?.refresh();
     },
     setWalls: (visible) => {
       wallsVisible = visible;
@@ -202,6 +221,7 @@ export function createView3D(container: HTMLElement, initial: Plan, store: Store
       highlight.dispose();
       disposeFocus();
       disposeDrag();
+      elevationGizmo?.dispose();
       controls.dispose();
       if (world) scene.remove(world);
       disposeEnv();

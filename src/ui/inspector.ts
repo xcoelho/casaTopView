@@ -9,6 +9,7 @@ import { fmtArea, fmtLength } from '../core/units';
 import type { Store } from '../core/store';
 import { itemThumb } from '../render/thumbnail';
 import { createItemPreview } from '../view3d/preview';
+import { isElevatable, itemElevation, maxElevation } from '../view3d/furniture';
 import { setWallLength, wallLength } from '../interaction/wallResize';
 import type { Shell } from './shell';
 import {
@@ -166,11 +167,24 @@ export function mountInspector(shell: Shell, deps: InspectorDeps): InspectorHand
       onCommit: (value) => (multi ? store.updateItems({ rot: value }) : store.updateItem(item.id, { rot: value })),
     });
 
+    const elevationField = isElevatable(item.defId)
+      ? numberField({
+          label: 'Altura da base',
+          value: itemElevation(item),
+          min: 0,
+          max: maxElevation(item.defId),
+          step: 5,
+          unit: 'cm',
+          onCommit: (value) => store.updateItem(item.id, { elevation: value }, 'Altura'),
+        })
+      : null;
+
     nodes.push(
       section(
         'Posição',
         el('div', { class: 'field-row' }, xField, yField),
         el('div', { class: 'field-row' }, wField, dField),
+        ...(elevationField ? [elevationField] : []),
         rotField,
         rotationsRow(),
       ),

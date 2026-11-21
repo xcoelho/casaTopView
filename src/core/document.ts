@@ -119,6 +119,8 @@ export interface Item {
   d: number;
   /** rotação em graus, horária */
   rot: number;
+  /** altura da base no 3D, em cm; ausente usa a altura padrão do modelo */
+  elevation?: number;
   colors: Record<string, string>;
   label?: string;
   locked?: boolean;
@@ -270,6 +272,9 @@ export function normalizePlan(raw: unknown): Plan {
               w: Number(i.w) || def.w,
               d: Number(i.d) || def.d,
               rot: Number(i.rot) || 0,
+              elevation: Number.isFinite(Number(i.elevation))
+                ? Math.max(0, Number(i.elevation))
+                : undefined,
               colors: { ...(def.colors ?? {}), ...(i.colors ?? {}) },
               label: i.label,
               locked: !!i.locked,

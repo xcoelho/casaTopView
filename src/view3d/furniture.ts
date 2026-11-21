@@ -2,6 +2,7 @@
 import * as THREE from 'three';
 import type { CategoryId } from '../catalog/types';
 import type { Item } from '../core/document';
+import { WALL_HEIGHT } from '../core/constants';
 import { getDef } from '../catalog/registry';
 import { floorKeyForPisoDef } from '../catalog/items/pisos';
 import { shade } from '../catalog/draw';
@@ -19,7 +20,6 @@ import {
 } from './materials';
 
 const DEG = Math.PI / 180;
-const CEILING = 262;
 
 const CHROME = '#c9ced3';
 const STEEL = '#b9bec4';
@@ -168,6 +168,32 @@ export function itemHeight(defId: string): ModelSize {
   const def = getDef(defId);
   const category = def?.category ?? 'decoracao';
   return { height: CATEGORY_HEIGHT[category], base: 0 };
+}
+
+/** Altura da base padrão do modelo, em cm. */
+export function defaultElevation(defId: string): number {
+  return itemHeight(defId).base;
+}
+
+/** Maior altura de base sem o topo do modelo ultrapassar o teto. */
+export function maxElevation(defId: string): number {
+  return Math.max(0, WALL_HEIGHT - itemHeight(defId).height);
+}
+
+/** Itens que nascem suspensos (parede ou teto) aceitam ajuste de altura. */
+export function isElevatable(defId: string): boolean {
+  return itemHeight(defId).base > 0;
+}
+
+/** Limita a altura da base entre o chão e o teto livre. */
+export function clampElevation(value: number, defId: string): number {
+  const safe = Number.isFinite(value) ? value : defaultElevation(defId);
+  return Math.min(maxElevation(defId), Math.max(0, safe));
+}
+
+/** Altura efetiva da base: a escolhida no item ou a padrão do modelo. */
+export function itemElevation(item: Item): number {
+  return clampElevation(item.elevation ?? defaultElevation(item.defId), item.defId);
 }
 
 type Palette = {
@@ -493,14 +519,34 @@ function ledMirror(g: G, p: Palette): void {
   boxAt(g, w - 14, 0.6, h * 0.6, -w * 0.1, 1.2, h * 0.24, '#ffffff', 0.4, 0, 'screen');
 }
 
-/** Espelho redondo com alça de couro, como na referência. */
+/** Espelho redondo com alça de couro em "V" presa a um pino, como na referência. */
 function strapMirror(g: G, p: Palette): void {
   const { h, main, accent } = p;
   const r = Math.min(31, h * 0.24);
-  boxAt(g, 3, 3, 26, 0, 0, h - 8, accent, 1, 0, 'matte');
-  torusAt(g, r, 1.8, 0, 0, h - r - 18, accent, 'matte', 0, 0);
-  const glass = cylinderAt(g, r - 1.4, 1, 0, 0, h - r - 18.6, main, 1, 'screen');
+  const centerY = h - r - 18;
+
+  // Argola e vidro do espelho.
+  torusAt(g, r, 1.8, 0, 0, centerY, accent, 'matte', 0, 0);
+  const glass = cylinderAt(g, r - 1.4, 1, 0, 0, centerY - 0.6, main, 1, 'screen');
   glass.rotation.x = Math.PI / 2;
+
+  // Pino redondo preso à parede, no topo.
+  const knobY = h - 4;
+  const knob = cylinderAt(g, 3.4, 2.4, 0, 2.6, knobY - 1.2, accent, 1, 'matte');
+  knob.rotation.x = Math.PI / 2;
+
+  // Duas tiras de couro partindo do pino até as laterais altas da argola.
+  const ax = r * 0.85;
+  const ay = centerY + r * 0.53;
+  const strap = 2.2;
+  for (const side of [-1, 1]) {
+    const x1 = side * ax;
+    const dx = x1;
+    const dy = ay - knobY;
+    const len = Math.hypot(dx, dy);
+    const bar = boxAt(g, strap, strap, len, x1 / 2, 2.2, (knobY + ay) / 2 - len / 2, accent, 1, 0, 'matte');
+    bar.rotation.z = Math.atan2(-dx, dy);
+  }
 }
 
 /** Enfeites de parede: peixes de madeira e círculos de metal. */
@@ -2486,11 +2532,12 @@ function generic(g: G, p: Palette, category: CategoryId): void {
 
 export function buildFurniture(item: Item): THREE.Group {
   const group = new THREE.Group();
-  group.position.set(item.x, 0, item.y);
+  const elevation = itemElevation(item);
+  group.position.set(item.x, elevation, item.y);
   group.rotation.y = -item.rot * DEG;
   group.userData.itemId = item.id;
 
-  const { height, base } = itemHeight(item.defId);
+  const { height } = itemHeight(item.defId);
   const main = item.colors.main ?? '#c9a37a';
   const accent = item.colors.accent ?? shade(main, 0.14);
   const palette: Palette = {
@@ -2498,8 +2545,8 @@ export function buildFurniture(item: Item): THREE.Group {
     w: item.w,
     d: item.d,
     h: height,
-    base,
-    ceil: CEILING - base,
+    base: elevation,
+    ceil: WALL_HEIGHT - elevation,
     main,
     accent,
     dark: shade(main, -0.16),
@@ -2508,7 +2555,6 @@ export function buildFurniture(item: Item): THREE.Group {
   };
 
   const body = new THREE.Group();
-  body.position.y = base;
   group.add(body);
 
   switch (item.defId) {

@@ -52,7 +52,7 @@ export function open3DViewer({ shell, store }: Viewer3DOptions): void {
   const hint = el(
     'div',
     { class: 'viewer3d-hint' },
-    'Clique seleciona · Arraste o móvel para mover · Duplo-clique centraliza · Arraste no vazio para girar · Rolagem para aproximar',
+    'Clique seleciona · Arraste o móvel para mover · Alça vertical ajusta a altura · Duplo-clique centraliza · Arraste no vazio para girar',
   );
 
   const root = el('div', { class: 'viewer3d' }, host, head, hint);
