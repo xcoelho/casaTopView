@@ -7,6 +7,7 @@ import type { Store } from '../core/store';
 import { buildFloors, buildWalls } from './architecture';
 import { applyRealisticEnvironment } from './env';
 import { buildFurniture } from './furniture';
+import { createQualityRenderer, type QualityRenderer } from './quality';
 import {
   attachElevationHandle,
   attachItemDrag,
@@ -18,9 +19,19 @@ import {
 
 const DEG = Math.PI / 180;
 
+/** Intensidade do IBL: mais forte em alta qualidade para os metais e vidros reagirem. */
+const ENV_INTENSITY = 0.36;
+const ENV_INTENSITY_HQ = 0.5;
+const SHADOW_MAP = 2048;
+const SHADOW_MAP_HQ = 4096;
+/** Blur do PCF: quanto maior, mais suave a borda da sombra. */
+const SHADOW_RADIUS = 3;
+const SHADOW_RADIUS_HQ = 5;
+
 export interface View3DHandle {
   update(plan: Plan): void;
   setWalls(visible: boolean): void;
+  setHighQuality(enabled: boolean): void;
   fit(): void;
   dispose(): void;
 }
@@ -33,7 +44,7 @@ export function createView3D(container: HTMLElement, initial: Plan, store: Store
 
   const scene = new THREE.Scene();
   scene.background = new THREE.Color('#f1eee6');
-  const disposeEnv = applyRealisticEnvironment(renderer, scene, 0.36);
+  const disposeEnv = applyRealisticEnvironment(renderer, scene, ENV_INTENSITY);
 
   const camera = new THREE.PerspectiveCamera(50, 1, 5, 40000);
   const controls = new OrbitControls(camera, renderer.domElement);
@@ -47,7 +58,8 @@ export function createView3D(container: HTMLElement, initial: Plan, store: Store
 
   const sun = new THREE.DirectionalLight(0xfff4e0, 1.22);
   sun.castShadow = true;
-  sun.shadow.mapSize.set(2048, 2048);
+  sun.shadow.mapSize.set(SHADOW_MAP, SHADOW_MAP);
+  sun.shadow.radius = SHADOW_RADIUS;
   sun.shadow.bias = -0.0004;
   sun.shadow.normalBias = 2;
   scene.add(sun);
@@ -89,6 +101,16 @@ export function createView3D(container: HTMLElement, initial: Plan, store: Store
     shadowCamera.near = 1;
     shadowCamera.far = radius * 8;
     shadowCamera.updateProjectionMatrix();
+  }
+
+  /** Troca o shadow map em runtime; a textura precisa ser descartada para recriar. */
+  function setShadowQuality(high: boolean): void {
+    sun.shadow.radius = high ? SHADOW_RADIUS_HQ : SHADOW_RADIUS;
+    const size = high ? SHADOW_MAP_HQ : SHADOW_MAP;
+    if (sun.shadow.mapSize.x === size) return;
+    sun.shadow.mapSize.set(size, size);
+    sun.shadow.map?.dispose();
+    sun.shadow.map = null;
   }
 
   function rebuild(next: Plan): void {
@@ -135,12 +157,16 @@ export function createView3D(container: HTMLElement, initial: Plan, store: Store
     controls.update();
   }
 
+  let quality: QualityRenderer | null = null;
+  let highQuality = false;
+
   function resize(): void {
     const width = Math.max(1, container.clientWidth);
     const height = Math.max(1, container.clientHeight);
     renderer.setSize(width, height, false);
     camera.aspect = width / height;
     camera.updateProjectionMatrix();
+    quality?.setSize(width, height);
   }
 
   const observer = new ResizeObserver(resize);
@@ -153,7 +179,8 @@ export function createView3D(container: HTMLElement, initial: Plan, store: Store
     raf = requestAnimationFrame(loop);
     controls.update();
     elevationGizmo?.tick();
-    renderer.render(scene, camera);
+    if (highQuality && quality) quality.render();
+    else renderer.render(scene, camera);
   }
 
   rebuild(initial);
@@ -212,6 +239,22 @@ export function createView3D(container: HTMLElement, initial: Plan, store: Store
       wallsVisible = visible;
       if (walls) walls.visible = visible;
     },
+    setHighQuality: (enabled) => {
+      if (enabled) {
+        if (!quality) {
+          const width = Math.max(1, container.clientWidth);
+          const height = Math.max(1, container.clientHeight);
+          quality = createQualityRenderer(renderer, scene, camera, { width, height });
+        }
+        highQuality = quality !== null;
+      } else {
+        highQuality = false;
+      }
+
+      scene.environmentIntensity = highQuality ? ENV_INTENSITY_HQ : ENV_INTENSITY;
+      renderer.toneMappingExposure = highQuality ? 0.96 : 0.98;
+      setShadowQuality(highQuality);
+    },
     fit,
     dispose: () => {
       cancelAnimationFrame(raf);
@@ -222,6 +265,7 @@ export function createView3D(container: HTMLElement, initial: Plan, store: Store
       disposeFocus();
       disposeDrag();
       elevationGizmo?.dispose();
+      quality?.dispose();
       controls.dispose();
       if (world) scene.remove(world);
       disposeEnv();

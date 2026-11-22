@@ -5,12 +5,15 @@ import { floorMaterial } from '../core/document';
 import type { FloorKey } from '../core/document';
 import {
   brushedMetalTexture,
+  fabricAlbedoTexture,
   fabricWeaveTexture,
   floorTexture,
   screenSheenTexture,
+  stoneAlbedoTexture,
   stoneSpeckleTexture,
   wallPaintTexture,
   waterRippleTexture,
+  woodAlbedoTexture,
   woodGrainTexture,
 } from './textures';
 
@@ -106,6 +109,7 @@ export function material(
         color,
         roughness: 0.56,
         metalness: 0.04,
+        map: woodAlbedoTexture(),
         bumpMap: tex,
         bumpScale: 0.55,
         roughnessMap: tex,
@@ -120,6 +124,7 @@ export function material(
         color,
         roughness: 0.92,
         metalness: 0,
+        map: fabricAlbedoTexture(),
         bumpMap: tex,
         bumpScale: 0.45,
         sheen: 0.22,
@@ -185,6 +190,7 @@ export function material(
         color,
         roughness: 0.48,
         metalness: 0.04,
+        map: stoneAlbedoTexture(),
         bumpMap: tex,
         bumpScale: 0.35,
         roughnessMap: tex,

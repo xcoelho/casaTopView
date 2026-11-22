@@ -10,18 +10,22 @@ export const modelHeight = 40;
 export const modelBase = 0;
 
 export function build({ body, palette, item, main, height }: ModelBuildContext): void {
-  const { GLASS, cylinderAt, roundedBoxAt, shade } = shared;
+  const { cylinderAt, roundedBoxAt, shade } = shared;
   /** Mesa de centro orgânica: tampo oval de vidro sobre blocos de madeira cruzados. */
   function organicCoffeeTable(g: G, p: Palette): void {
-    const { w, d, h, main, dark } = p;
+    const { w, d, h, main, accent } = p;
     const r = Math.min(w, d) / 2;
-    roundedBoxAt(g, w * 0.52, 16, h - 4, -w * 0.06, -d * 0.05, 0, dark, 4, 'wood', 1, 0.42);
-    roundedBoxAt(g, w * 0.4, 14, h - 6, w * 0.14, d * 0.1, 0, shade(main, -0.1), 4, 'wood', 1, -0.62);
-    cylinderAt(g, 3.2, h - 4, w * 0.02, 0, 0, shade(main, -0.22), 1, 'wood');
-    const top = cylinderAt(g, r, 3, 0, 0, h - 3, GLASS, 0.42, 'glass');
-    top.scale.set(1, 1, 0.76);
-    const shine = cylinderAt(g, r * 0.94, 0.6, 0, 0, h - 0.6, '#eaf6fa', 0.4, 'glass');
-    shine.scale.set(1, 1, 0.76);
+    const topT = 2.4;
+    const topY = h - topT;
+    // base: duas travessas cruzadas, ambas encostando no tampo
+    roundedBoxAt(g, w * 0.5, 16, topY, 0, 0, 0, shade(accent, -0.14), 4, 'wood', 1, 0.42);
+    roundedBoxAt(g, w * 0.42, 14, topY, 0, 0, 0, accent, 4, 'wood', 1, -0.62);
+    cylinderAt(g, 3.2, topY, 0, 0, 0, shade(accent, -0.3), 1, 'wood');
+    // tampo oval de vidro: o cilindro ja traz o raio na escala, so a profundidade e comprimida
+    const top = cylinderAt(g, r, topT, 0, 0, topY, main, 0.42, 'glass');
+    top.scale.z *= 0.76;
+    const shine = cylinderAt(g, r * 0.94, 0.6, 0, 0, topY + topT - 0.8, '#eaf6fa', 0.45, 'glass');
+    shine.scale.z *= 0.76;
   }
 
   organicCoffeeTable(body, palette);

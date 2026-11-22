@@ -15,13 +15,32 @@ export function build({ body, palette, item, main, height }: ModelBuildContext):
   function wallFish(g: G, p: Palette): void {
     const { w, h, main } = p;
     const sizes = [44, 30, 34];
+    const flips = [false, true, false];
+    const heights = [0.34, 0.66, 0.32];
+    const tailLen = 6;
     for (let i = 0; i < 3; i++) {
-      const x = -w / 2 + w * (0.28 + i * 0.22);
-      const y = h * (0.5 + (i % 2 ? 0.14 : -0.06));
+      const x = -w / 2 + w * (0.32 + i * 0.2);
+      const y = h * heights[i];
       const len = sizes[i];
-      const fish = sphereAt(g, len / 2, x, y, 1.6, main, [1, 0.22, 0.12], 'wood');
-      fish.rotation.z = i === 1 ? Math.PI : 0;
-      coneAt(g, 4, 1.4, 7, x + (i === 1 ? -len / 2 : len / 2), y, 0, shade(main, -0.1), 1, 'wood', 12);
+      const side = flips[i] ? 1 : -1;
+      const tailR = len * 0.085;
+      sphereAt(g, len / 2, x, y, 1.6, main, [1, 0.22, 0.12], 'wood');
+      const fin = coneAt(
+        g,
+        tailR,
+        tailR * 0.3,
+        tailLen,
+        x + side * (len / 2 + tailLen / 2 - 1.5),
+        1.6,
+        y - tailLen / 2,
+        shade(main, -0.12),
+        1,
+        'wood',
+        12,
+      );
+      fin.rotation.z = side < 0 ? Math.PI / 2 : -Math.PI / 2;
+      fin.scale.z = 0.3;
+      sphereAt(g, len * 0.045, x - side * len * 0.3, y + 1, 3.2, '#2a2118', [1, 1, 0.4], 'matte');
     }
   }
 

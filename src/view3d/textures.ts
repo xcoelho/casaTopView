@@ -23,6 +23,7 @@ function makeTexture(
   tex.wrapS = THREE.RepeatWrapping;
   tex.wrapT = THREE.RepeatWrapping;
   tex.repeat.set(repeat, repeat);
+  tex.anisotropy = 8;
   tex.needsUpdate = true;
   cache.set(key, tex);
   return tex;
@@ -612,6 +613,93 @@ export function floorTexture(key: FloorKey, base: string, line: string): FloorTe
   const set = { map, bump };
   floorTextures.set(key, set);
   return set;
+}
+
+/**
+ * Albedo claro (base quase branca, contraste baixo): multiplica a cor escolhida e
+ * revela veio/trama/grão na própria cor, em vez de deixar a superfície lisa.
+ */
+function finishAlbedo(
+  key: string,
+  size: number,
+  draw: (ctx: CanvasRenderingContext2D, s: number) => void,
+  repeat: number,
+): THREE.CanvasTexture {
+  const tex = makeTexture(key, size, draw, repeat);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  tex.needsUpdate = true;
+  return tex;
+}
+
+/** Veios de madeira visíveis na cor, sobre base quase branca. */
+export function woodAlbedoTexture(): THREE.CanvasTexture {
+  return finishAlbedo(
+    'wood-albedo',
+    256,
+    (ctx, s) => {
+      ctx.fillStyle = '#efece6';
+      ctx.fillRect(0, 0, s, s);
+      const rand = seededRandom(4211);
+      for (let i = 0; i < 96; i++) {
+        const y = rand() * s;
+        if (rand() > 0.45) {
+          ctx.strokeStyle = `rgba(104,80,56,${0.1 + rand() * 0.1})`;
+        } else {
+          ctx.strokeStyle = `rgba(255,255,255,${0.12 + rand() * 0.16})`;
+        }
+        ctx.lineWidth = 0.8 + rand() * 2;
+        ctx.beginPath();
+        ctx.moveTo(0, y);
+        const amp = 1.5 + rand() * 4;
+        const freq = 0.02 + rand() * 0.03;
+        const phase = rand() * Math.PI * 2;
+        for (let x = 0; x <= s; x += 16) ctx.lineTo(x, y + Math.sin(x * freq + phase) * amp);
+        ctx.stroke();
+      }
+    },
+    2,
+  );
+}
+
+/** Trama de tecido visível na cor, em contraste suave. */
+export function fabricAlbedoTexture(): THREE.CanvasTexture {
+  return finishAlbedo(
+    'fabric-albedo',
+    128,
+    (ctx, s) => {
+      ctx.fillStyle = '#f1f0ee';
+      ctx.fillRect(0, 0, s, s);
+      const step = 4;
+      for (let y = 0; y < s; y += step) {
+        for (let x = 0; x < s; x += step) {
+          ctx.fillStyle = ((x / step + y / step) & 1) === 0 ? '#fbfaf8' : '#e6e4df';
+          ctx.fillRect(x, y, step - 1, step - 1);
+        }
+      }
+    },
+    6,
+  );
+}
+
+/** Grão de pedra/mármore visível na cor. */
+export function stoneAlbedoTexture(): THREE.CanvasTexture {
+  return finishAlbedo(
+    'stone-albedo',
+    256,
+    (ctx, s) => {
+      ctx.fillStyle = '#f3f2ef';
+      ctx.fillRect(0, 0, s, s);
+      const rand = seededRandom(9101);
+      for (let i = 0; i < 520; i++) {
+        const v = 150 + Math.floor(rand() * 90);
+        ctx.fillStyle = `rgba(${v},${v},${v - 4},${0.08 + rand() * 0.14})`;
+        ctx.beginPath();
+        ctx.arc(rand() * s, rand() * s, 0.7 + rand() * 2.2, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    },
+    2,
+  );
 }
 
 /** Ruído fino de pintura para bump/roughness das paredes. */

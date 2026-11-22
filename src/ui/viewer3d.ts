@@ -40,13 +40,25 @@ export function open3DViewer({ shell, store }: Viewer3DOptions): void {
     disabled: true,
     onClick: () => view?.fit(),
   });
+  let qualityOn = false;
+  const qualityButton = button({
+    label: 'Alta qualidade',
+    icon: 'sparkles',
+    title: 'Liga oclusão de ambiente (GTAO), sombras suaves, ambiente mais forte e anti-aliasing (mais pesado)',
+    disabled: true,
+    onClick: () => {
+      qualityOn = !qualityOn;
+      qualityButton.classList.toggle('active', qualityOn);
+      view?.setHighQuality(qualityOn);
+    },
+  });
   const closeButton = button({ label: 'Fechar', icon: 'close', onClick: () => close() });
 
   const head = el(
     'div',
     { class: 'viewer3d-head' },
     title,
-    el('div', { class: 'viewer3d-actions' }, wallsButton, fitButton, closeButton),
+    el('div', { class: 'viewer3d-actions' }, wallsButton, fitButton, qualityButton, closeButton),
   );
 
   const hint = el(
@@ -63,6 +75,7 @@ export function open3DViewer({ shell, store }: Viewer3DOptions): void {
     view = createView3D(host, store.doc, store);
     wallsButton.disabled = false;
     fitButton.disabled = false;
+    qualityButton.disabled = false;
     wallsButton.classList.add('active');
   } catch (error) {
     console.error('WebGL indisponível para a vista 3D', error);

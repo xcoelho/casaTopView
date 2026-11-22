@@ -11,7 +11,8 @@ export function applyRealisticEnvironment(
   renderer.toneMappingExposure = 0.98;
   renderer.outputColorSpace = THREE.SRGBColorSpace;
   renderer.shadowMap.enabled = true;
-  renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+  // PCFSoftShadowMap foi removido no three r187; PCFShadowMap usa o radius para suavizar.
+  renderer.shadowMap.type = THREE.PCFShadowMap;
 
   const pmrem = new THREE.PMREMGenerator(renderer);
   const roomEnv = new RoomEnvironment();

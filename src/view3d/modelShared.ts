@@ -137,19 +137,27 @@ export function slabWithHole(
   if (back - hb > 0.5) boxAt(g, hole.w, back - hb, t, hole.x, (hb + back) / 2, y, color, 1, 0, kind);
 }
 
-export function basin(g: G, w: number, d: number, depth: number, top: number, color: string): void {
+export function basin(
+  g: G,
+  w: number,
+  d: number,
+  depth: number,
+  top: number,
+  color: string,
+  kind: MaterialKind = 'matte',
+): void {
   const t = 1.6;
-  boxAt(g, w, t, depth, 0, -d / 2, top - depth, color, 1, 0, 'matte');
-  boxAt(g, w, t, depth, 0, d / 2, top - depth, color, 1, 0, 'matte');
-  boxAt(g, t, d, depth, -w / 2, 0, top - depth, color, 1, 0, 'matte');
-  boxAt(g, t, d, depth, w / 2, 0, top - depth, color, 1, 0, 'matte');
-  boxAt(g, w, d, t, 0, 0, top - depth - t, shade(color, -0.3), 1, 0, 'matte');
+  boxAt(g, w, t, depth, 0, -d / 2, top - depth, color, 1, 0, kind);
+  boxAt(g, w, t, depth, 0, d / 2, top - depth, color, 1, 0, kind);
+  boxAt(g, t, d, depth, -w / 2, 0, top - depth, color, 1, 0, kind);
+  boxAt(g, t, d, depth, w / 2, 0, top - depth, color, 1, 0, kind);
+  boxAt(g, w, d, t, 0, 0, top - depth - t, shade(color, -0.3), 1, 0, kind);
   // Aro rebaixado que desenha o vão na bancada.
   const rim = shade(color, -0.35);
-  boxAt(g, w + 2.6, 1.2, 0.8, 0, -d / 2 - 0.6, top - 0.8, rim, 1, 0, 'matte');
-  boxAt(g, w + 2.6, 1.2, 0.8, 0, d / 2 + 0.6, top - 0.8, rim, 1, 0, 'matte');
-  boxAt(g, 1.2, d + 2.6, 0.8, -w / 2 - 0.6, 0, top - 0.8, rim, 1, 0, 'matte');
-  boxAt(g, 1.2, d + 2.6, 0.8, w / 2 + 0.6, 0, top - 0.8, rim, 1, 0, 'matte');
+  boxAt(g, w + 2.6, 1.2, 0.8, 0, -d / 2 - 0.6, top - 0.8, rim, 1, 0, kind);
+  boxAt(g, w + 2.6, 1.2, 0.8, 0, d / 2 + 0.6, top - 0.8, rim, 1, 0, kind);
+  boxAt(g, 1.2, d + 2.6, 0.8, -w / 2 - 0.6, 0, top - 0.8, rim, 1, 0, kind);
+  boxAt(g, 1.2, d + 2.6, 0.8, w / 2 + 0.6, 0, top - 0.8, rim, 1, 0, kind);
 }
 
 export function faucet(g: G, x: number, z: number, y: number, color: string, height = 18, reach = 10): void {
@@ -192,12 +200,21 @@ export function sofa(g: G, p: Palette, seats: number, chaise: boolean): void {
     roundedBoxAt(g, arm, bodyD, 24, sx * (a - arm / 2), cz, 44, main, 6.5, 'fabric');
   }
 
+  // Costura (piping) no topo do encosto e nos braços: dá o "relevo" de estofado real.
+  roundedBoxAt(g, w - 26, 8, 7, 0, back + 9, h - 8, shade(main, 0.05), 3, 'fabric');
+  for (const sx of [-1, 1]) {
+    if (chaise && sx === 1) continue;
+    roundedBoxAt(g, arm - 2, bodyD - 4, 5, sx * (a - arm / 2), cz, 66, shade(main, 0.05), 2.4, 'fabric');
+  }
+
   const leftEdge = -a + arm;
   const rightEdge = chaise ? a - chaiseW : a - arm;
   const cw = (rightEdge - leftEdge - 4) / seats;
   for (let i = 0; i < seats; i++) {
     const x = leftEdge + 2 + cw * (i + 0.5);
     roundedBoxAt(g, cw - 2, bodyD - 26, 12, x, cz + 5, 48, light, 4, 'fabric');
+    // Costura na borda frontal de cada almofada do assento.
+    roundedBoxAt(g, cw - 4, 2.2, 2.2, x, cz + 5 - (bodyD - 26) / 2 + 1.1, 52, shade(light, -0.16), 1, 'fabric');
     roundedBoxAt(g, cw - 4, 13, 27, x, back + 21, 50, light, 4.5, 'fabric', 1, 0, -0.19);
   }
 
@@ -271,9 +288,20 @@ export function openCloset(g: G, p: Palette, cols: number): void {
       boxAt(g, pieceW - 2, 1.6, h * 0.22, bx + pieceW / 2, 0, h - 38 - h * 0.22, cloth[(c + i) % cloth.length], 1, 0, 'fabric');
     }
     boxAt(g, cw - 8, d - 8, 2.4, cx, 0, h * 0.52, shade(main, -0.06), 1, 0, 'paint');
-    boxAt(g, cw - 16, d - 14, 14, cx, 0, h * 0.3, shade(accent, 0.06), 1, 0, 'fabric');
-    boxAt(g, cw - 16, d - 14, 14, cx, 0, h * 0.16, shade(accent, -0.04), 1, 0, 'fabric');
-    boxAt(g, cw * 0.4, 2, 2, cx, d / 2 - 1, h * 0.36, DARK_METAL, 1, 0, 'metal');
+    // gaveteira de madeira apoiada no fundo do modulo, com frentes e puxadores reais
+    const towerY = t;
+    const towerH = h * 0.52 - 2 - towerY;
+    const drawerCount = 4;
+    const gap = 2.5;
+    const dh = (towerH - gap * (drawerCount - 1)) / drawerCount;
+    const zf = d / 2 - 9;
+    roundedBoxAt(g, cw - 2, d - 14, towerH, cx, -2, towerY, shade(main, -0.08), 1.2, 'wood');
+    for (let i = 0; i < drawerCount; i++) {
+      const y = towerY + i * (dh + gap);
+      roundedBoxAt(g, cw - 4, 2.4, dh, cx, zf + 1.2, y, shade(main, -0.04), 1, 'wood');
+      boxAt(g, cw - 12, 1, dh - 8, cx, zf + 2.55, y + 4, shade(main, -0.12), 1, 0, 'wood');
+      roundedBoxAt(g, Math.min(cw * 0.26, 20), 2.4, 2.2, cx, zf + 3.6, y + dh / 2 - 1.1, DARK_METAL, 1, 'metal');
+    }
   }
 }
 
@@ -285,8 +313,9 @@ export function floatingVanity(g: G, p: Palette, square: boolean): void {
   boxAt(g, w - 14, d - 14, 22, 0, 0, topY - 22, shade(main, -0.14), 1, 0, 'stone');
   boxAt(g, w - 14, d - 20, 2.4, 0, -2, topY - 23.5, shade(main, -0.2), 1, 0, 'stone');
   if (square) {
-    boxAt(g, 36, 26, 13, 0, 1, topY + 5, accent, 1, 0, 'ceramic');
-    boxAt(g, 30, 20, 2, 0, 1, topY + 14, shade(accent, 0.2), 1, 0, 'ceramic');
+    // Cuba de apoio retangular vazada (paredes + fundo), no lugar do bloco maciço.
+    basin(g, 36, 26, 13, topY + 19.6, accent, 'ceramic');
+    cylinderAt(g, 2.4, 0.8, 0, 0, topY + 6.6, shade(accent, -0.45), 1, 'matte');
   } else {
     latheAt(g, [[0, 0], [15, 0], [17, 4], [17, 11], [15, 13], [13, 11], [13, 4], [0, 3]], 0, 1, topY + 5, PORCELAIN, 'ceramic', 30, 1, 0.78);
   }
@@ -351,11 +380,21 @@ export function bed(g: G, p: Palette): void {
   fourLegs(g, w, d, 10, 9, 2.6, 3.4, dark, 'wood');
   roundedBoxAt(g, w, d - 10, 20, 0, 6, 8, main, 2.5, 'wood');
   roundedBoxAt(g, w - 6, d - 18, 20, 0, 8, 27, PORCELAIN, 4.5, 'fabric');
+  // Piping da borda do colchão.
+  roundedBoxAt(g, w - 4, d - 16, 2, 0, 8, 45.5, shade(PORCELAIN, -0.12), 1, 'fabric');
   roundedBoxAt(g, w - 2, d * 0.55, 9, 0, b - d * 0.275, 44, accent, 3.5, 'fabric');
+  // Dobra virada do edredom na frente da cama.
+  roundedBoxAt(g, w - 2, 4, 7, 0, b - d * 0.55 + 2, 47, shade(accent, 0.12), 3, 'fabric');
   roundedBoxAt(g, w - 4, 13, 10, 0, -d * 0.055, 44, shade(accent, 0.14), 3, 'fabric');
 
   roundedBoxAt(g, w + 6, 9, 96, 0, -b + 4, 0, main, 3, 'wood');
   roundedBoxAt(g, w - 12, 5, 74, 0, -b + 8.6, 14, accent, 3, 'fabric');
+  // Capitonê: costuras verticais na cabeceira estofada.
+  const tufts = Math.max(3, Math.round(w / 26));
+  for (let i = 1; i < tufts; i++) {
+    const x = -w / 2 + (w * i) / tufts;
+    boxAt(g, 1.1, 1.4, 68, x, -b + 11.3, 16, shade(accent, -0.22), 1, 0, 'fabric');
+  }
 
   const n = w > 130 ? 2 : 1;
   const pw = (w - 26 - (n - 1) * 8) / n;
@@ -373,6 +412,8 @@ export function drawers(g: G, p: Palette, count: number, withLegs = true): void 
   if (withLegs) fourLegs(g, w, d, legH, 5, 1.5, 1.9, dark, 'wood');
   roundedBoxAt(g, w, d - 3, h - legH - 4, 0, 0, legH, main, 1.6, 'wood');
   roundedBoxAt(g, w + 2, d, 4, 0, 0, h - 4, shade(main, 0.06), 1.2, 'wood');
+  // Linha de recuo escura logo acima da base: separa o corpo do rodapé.
+  boxAt(g, w - 6, 1.4, 2.2, 0, d / 2 - 1.4, legH + 1, shade(main, -0.5), 1, 0, 'paint');
 
   const gap = 2.5;
   const dh = (h - legH - 12 - gap * (count - 1)) / count;
@@ -381,7 +422,7 @@ export function drawers(g: G, p: Palette, count: number, withLegs = true): void 
     roundedBoxAt(g, w - 8, 2.5, dh, 0, d / 2 - 1.2, y, shade(main, -0.04), 1, 'wood');
     boxAt(g, w - 16, 1, dh - 8, 0, d / 2 + 0.2, y + 4, shade(main, -0.11), 1, 0, 'wood');
     const hw = Math.min(w * 0.26, 22);
-    boxAt(g, hw, 2.6, 2.2, 0, d / 2 + 0.9, y + dh / 2 - 1.1, accent, 1, 0, 'metal');
+    roundedBoxAt(g, hw, 2.4, 2.2, 0, d / 2 + 0.9, y + dh / 2 - 1.1, accent, 1, 'metal');
   }
 }
 
@@ -491,17 +532,15 @@ export function bunkBed(g: G, p: Palette, desk: boolean): void {
   for (const sx of [-1, 1]) {
     roundedBoxAt(g, 3, d - 20, 20, sx * (w / 2 - post + 1), 0, 126, main, 1, 'wood');
   }
-  // escada lateral (belief: 5 degraus)
-  const steps = 5;
-  const stepW = 24;
-  const stepD = (d - 30) / steps;
-  for (let i = 0; i < steps; i++) {
-    const y = 18 + i * ((110 - 18) / (steps - 1));
-    const z = -b + 22 + (i + 0.5) * stepD;
-    roundedBoxAt(g, stepW, stepD - 3, 4, w / 2 + stepW / 2 - 4, z, y, dark, 1, 'wood');
-  }
+  // escada tradicional: duas travessas verticais no lado direito, ligadas por 3 degraus
+  const ladderX = w / 2 - 2;
+  const ladderZ = b - 28;
+  const railGap = 26;
   for (const sz of [-1, 1]) {
-    roundedBoxAt(g, 3, d - 30, 4, w / 2 + stepW - 4, 0, 110, main, 1, 'wood');
+    roundedBoxAt(g, 4, 4, 122, ladderX, ladderZ + sz * (railGap / 2), 0, main, 1, 'wood');
+  }
+  for (const y of [28, 60, 92]) {
+    roundedBoxAt(g, 4, railGap, 4, ladderX, ladderZ, y, dark, 1, 'wood');
   }
   if (desk) {
     // escrivaninha embaixo: tampo + pés + gaveta
