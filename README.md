@@ -7,11 +7,12 @@ Editor de plantas baixas em vista de cima para uso pessoal: desenhe paredes e c�
 ## Funcionalidades
 
 - **Desenho 2D** — ferramentas de parede, cômodo, porta, janela e medição, com encaixe (snap) em cantos, eixos e paredes, cotas automáticas, grade e barra de escala.
-- **Catálogo de móveis** — 80 itens em 16 categorias (camas, mesas, assentos, armários, cozinha, banheiro, closet, eletro, escritório, gourmet, lavanderia, infantil, decoração, estrutura, externo e aberturas), com busca por nome e miniatura. Arraste um item da lista direto para a planta.
+- **Catálogo de móveis** — um pacote por peça em `src/furniture/<id>/`, com metadados, desenho 2D (`definition.ts`) e modelo 3D (`model.ts`) na mesma pasta. O Vite descobre as pastas automaticamente, então uma peça nova entra sem editar registro central. Busca por nome e miniatura, arrastando um item da lista direto para a planta.
 - **Edição precisa** — inspetor com posição, medidas, rotação, alinhamento, travar/desbloquear, duplicar e troca de materiais/acabamentos por item.
 - **Cômodos** — ambientes fechados com nome, tipo de piso e área calculada; o total da planta aparece nos quantitativos.
 - **Aberturas reais** — portas e janelas se prendem à parede mais próxima e abrem o vão de verdade na espessura da parede, com lado de dobradiça, inversão e cor da folha.
 - **Vista 3D** — modelo gerado a partir da própria planta (paredes, pisos, aberturas e móveis), com órbita, zoom e materiais por categoria.
+- **Pacotes de móveis** — cada peça vive em `src/furniture/<id>/` com `definition.ts` (metadados + desenho 2D) e `model.ts` (3D, opcional); o contrato para gerar peças com IA está em [MODELO-3D-SPEC.md](MODELO-3D-SPEC.md).
 - **Imagem de fundo** — sobreponha um PDF/print de planta existente, com calibração de escala entre dois pontos clicados.
 - **Quantitativos** — áreas de piso por ambiente, área de parede, rodapé, aberturas e contagem de móveis.
 - **Exportação** — PDF (planta 2D + vista 3D, ou só um dos dois), PNG (inclusive com fundo transparente), CSV de quantitativos e JSON da planta.
@@ -69,10 +70,12 @@ scripts/
 src/
   main.ts             ponto de entrada: monta a interface e liga tudo
   core/               modelo da planta, store com histórico, persistência, unidades, quantitativos
-  catalog/            definições dos móveis (draw 2D, cores, medidas) e registro/busca
+  catalog/            tipos, registro automático do catálogo, busca e mapa de pisos
+  furniture/          um pacote por móvel: <id>/definition.ts (2D) e <id>/model.ts (3D)
+    shared/           ajudas de desenho reaproveitadas entre peças da mesma família
   render/             desenho 2D em canvas: camadas, viewport, tema, miniaturas
   interaction/        ponteiro, ferramentas (parede, cômodo, abertura, medir), mover, redimensionar, girar, encaixe, teclado
-  view3d/             vista 3D em three.js: arquitetura, móveis, materiais, texturas, previews e snapshot
+  view3d/             vista 3D em three.js: arquitetura, móveis, materiais, texturas, previews e snapshot (descobre os model.ts dos pacotes)
   ui/                 barra de ferramentas, catálogo, inspetor, diálogos, status bar, toasts
   export/             PNG, PDF (gerado à mão, sem dependências), CSV e JSON
   styles/             tokens, layout e componentes em CSS

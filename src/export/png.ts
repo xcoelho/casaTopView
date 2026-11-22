@@ -47,7 +47,7 @@ export function planImageCanvas(plan: Plan, transparent = false): HTMLCanvasElem
       dims: plan.settings.showDims,
       areas: true,
       roomNames: true,
-      background: transparent ? null : '#ffffff',
+      background: transparent ? null : plan.settings.background,
     },
   );
 

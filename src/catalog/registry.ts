@@ -1,23 +1,6 @@
-/** Registro de todos os móveis disponíveis. */
+/** Catálogo de móveis, descoberto a partir das pastas em src/furniture/. */
 import type { Item } from '../core/document';
 import type { CategoryId, CategoryInfo, FurnitureDef } from './types';
-import { assentos } from './items/assentos';
-import { mesas } from './items/mesas';
-import { camas } from './items/camas';
-import { armarios } from './items/armarios';
-import { cozinha } from './items/cozinha';
-import { banheiro } from './items/banheiro';
-import { eletro } from './items/eletro';
-import { lavanderia } from './items/lavanderia';
-import { closet } from './items/closet';
-import { infantil } from './items/infantil';
-import { escritorio } from './items/escritorio';
-import { gourmet } from './items/gourmet';
-import { decoracao } from './items/decoracao';
-import { pisos } from './items/pisos';
-import { externo } from './items/externo';
-import { estrutura } from './items/estrutura';
-import { aberturas } from './items/aberturas';
 import { uid } from '../core/ids';
 
 export const CATEGORIES: CategoryInfo[] = [
@@ -35,27 +18,40 @@ export const CATEGORIES: CategoryInfo[] = [
   { id: 'aberturas', name: 'Aberturas' },
 ];
 
-export const DEFS: FurnitureDef[] = [
-  ...aberturas,
-  ...assentos,
-  ...mesas,
-  ...camas,
-  ...armarios,
-  ...cozinha,
-  ...banheiro,
-  ...eletro,
-  ...lavanderia,
-  ...closet,
-  ...infantil,
-  ...escritorio,
-  ...gourmet,
-  ...decoracao,
-  ...pisos,
-  ...externo,
-  ...estrutura,
-];
+/**
+ * Cada peça é um pacote autocontido: `src/furniture/<id>/definition.ts` exporta a
+ * `FurnitureDef` (metadados + desenho 2D) e, quando existir, `model.ts` na mesma
+ * pasta traz o modelo 3D. Novas peças entram apenas criando a pasta, sem editar
+ * este registro nem qualquer outro arquivo central.
+ */
+const packages = import.meta.glob<{ default: FurnitureDef }>('../furniture/*/definition.ts', {
+  eager: true,
+});
 
-const byId = new Map<string, FurnitureDef>(DEFS.map((def) => [def.id, def]));
+const categoryOrder = new Map(CATEGORIES.map((category, index) => [category.id, index]));
+
+export const DEFS: FurnitureDef[] = Object.entries(packages)
+  .map(([file, mod]) => {
+    const def = mod.default;
+    const folder = file.split('/').slice(-2)[0];
+    if (!def?.id) throw new Error('Pacote de móvel sem definição: ' + file);
+    if (folder !== def.id) throw new Error(`Pacote ${folder} deve ter o mesmo id da definição (${def.id})`);
+    if (typeof def.draw !== 'function') throw new Error('Pacote de móvel sem desenho 2D: ' + file);
+    if (!categoryOrder.has(def.category)) {
+      throw new Error(`Categoria desconhecida em ${file}: ${def.category}`);
+    }
+    return def;
+  })
+  .sort(
+    (a, b) =>
+      categoryOrder.get(a.category)! - categoryOrder.get(b.category)! || a.id.localeCompare(b.id),
+  );
+
+const byId = new Map<string, FurnitureDef>();
+for (const def of DEFS) {
+  if (byId.has(def.id)) throw new Error('id de móvel duplicado: ' + def.id);
+  byId.set(def.id, def);
+}
 
 export function getDef(id: string): FurnitureDef | undefined {
   return byId.get(id);

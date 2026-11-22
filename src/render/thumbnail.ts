@@ -55,7 +55,7 @@ export function planThumb(plan: Plan, cssW = 320, cssH = 190): string {
     dims: false,
     areas: false,
     roomNames: false,
-    background: '#fbf9f3',
+    background: plan.settings.background,
   });
   return canvas.toDataURL('image/png');
 }

@@ -20,12 +20,25 @@ export interface Wall {
   a: Vec2;
   b: Vec2;
   thickness: number;
-  /** cor da parede no 3D; ausente usa o acabamento padrão */
+  /** Cor legada aplicada às duas faces; ausente usa o acabamento padrão. */
   color?: string;
+  /** Cor da face à esquerda ao seguir a direção de a para b. */
+  colorLeft?: string;
+  /** Cor da face à direita ao seguir a direção de a para b. */
+  colorRight?: string;
 }
 
 /** Acabamento padrão das paredes. */
 export const DEFAULT_WALL_COLOR = '#f1ede3';
+
+/** Resolve as duas faces, preservando a cor única das plantas antigas. */
+export function wallFaceColors(wall: Wall): { left: string; right: string } {
+  const fallback = wall.color ?? DEFAULT_WALL_COLOR;
+  return {
+    left: wall.colorLeft ?? fallback,
+    right: wall.colorRight ?? fallback,
+  };
+}
 
 export interface WallColor {
   name: string;
@@ -153,7 +166,24 @@ export interface PlanSettings {
   showDims: boolean;
   showAreas: boolean;
   wallThickness: number;
+  /** Cor do papel de desenho no editor e nas exportações com fundo. */
+  background: string;
 }
+
+export interface BackgroundColor {
+  name: string;
+  value: string;
+}
+
+/** Fundos rápidos para dar contraste à planta. */
+export const BACKGROUND_COLORS: BackgroundColor[] = [
+  { name: 'Papel', value: '#f1eee6' },
+  { name: 'Cinza suave', value: '#d9dde1' },
+  { name: 'Azul névoa', value: '#d3dce6' },
+  { name: 'Areia', value: '#e1d6c4' },
+  { name: 'Verde suave', value: '#d3ddd0' },
+  { name: 'Grafite', value: '#4b5560' },
+];
 
 export interface Plan {
   id: Id;
@@ -177,6 +207,7 @@ export function defaultSettings(): PlanSettings {
     showDims: true,
     showAreas: true,
     wallThickness: 15,
+    background: '#f1eee6',
   };
 }
 
@@ -236,7 +267,14 @@ export function normalizePlan(raw: unknown): Plan {
     id: typeof data.id === 'string' && data.id ? data.id : base.id,
     version: PLAN_VERSION,
     name: typeof data.name === 'string' && data.name.trim() ? data.name.trim() : base.name,
-    settings: { ...base.settings, ...(data.settings ?? {}) },
+    settings: {
+      ...base.settings,
+      ...(data.settings ?? {}),
+      background:
+        typeof data.settings?.background === 'string' && /^#[0-9a-f]{6}$/i.test(data.settings.background)
+          ? data.settings.background
+          : base.settings.background,
+    },
     walls: Array.isArray(data.walls)
       ? data.walls
           .filter((w): w is Wall => !!w && !!w.a && !!w.b)
@@ -246,6 +284,8 @@ export function normalizePlan(raw: unknown): Plan {
             b: { x: Number(w.b.x) || 0, y: Number(w.b.y) || 0 },
             thickness: Number(w.thickness) || base.settings.wallThickness,
             color: typeof w.color === 'string' && w.color ? w.color : undefined,
+            colorLeft: typeof w.colorLeft === 'string' && w.colorLeft ? w.colorLeft : undefined,
+            colorRight: typeof w.colorRight === 'string' && w.colorRight ? w.colorRight : undefined,
           }))
       : [],
     openings: [],

@@ -118,6 +118,7 @@ export class Renderer {
       dims: doc.settings.showDims,
       areas: doc.settings.showAreas,
       roomNames: doc.settings.showAreas,
+      background: doc.settings.background,
       underlay: true,
     }, () => this.invalidate());
     if (selection.length) drawSelection(this.ctx, this.store, view, this.dpr);

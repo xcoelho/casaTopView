@@ -1,11 +1,11 @@
 /** Paredes com vãos, esquadrias, portas entreabertas e pisos dos cômodos. */
 import * as THREE from 'three';
 import type { Plan, Wall } from '../core/document';
-import { DEFAULT_DOOR_COLOR, DEFAULT_WALL_COLOR, itemBounds, wallParts } from '../core/document';
-import { floorKeyForPisoDef } from '../catalog/items/pisos';
+import { DEFAULT_DOOR_COLOR, itemBounds, wallFaceColors, wallParts } from '../core/document';
+import { floorKeyForPisoDef } from '../catalog/floors';
 import { pointInPolygon } from '../core/geometry';
 import { shade } from '../catalog/draw';
-import { boxAt, cylinderAt, floorSurface, roundedBoxAt, torusAt } from './materials';
+import { boxAt, cylinderAt, floorSurface, material, roundedBoxAt, torusAt } from './materials';
 import {
   DOOR_HEIGHT,
   GARAGE_HEIGHT,
@@ -18,7 +18,6 @@ import {
 const DEG = Math.PI / 180;
 
 export { WALL_HEIGHT };
-const WALL_COLOR = DEFAULT_WALL_COLOR;
 const FRAME_COLOR = '#fbfaf6';
 const GLASS_COLOR = '#bfe3f2';
 const BASEBOARD_COLOR = '#fbfaf6';
@@ -164,13 +163,19 @@ export function buildWalls(plan: Plan): THREE.Group {
     const angle = Math.atan2(dy, dx);
     const thickness = Math.max(4, wall.thickness);
     const openings = plan.openings.filter((o) => o.wallId === wall.id);
+    const colors = wallFaceColors(wall);
 
     const segment = (start: number, end: number, base: number, height: number): void => {
       if (end - start < 1 || height < 1) return;
       const dist = (start + end) / 2;
       const x = wall.a.x + ux * dist;
       const z = wall.a.y + uy * dist;
-      boxAt(group, end - start, thickness, height, x, z, base, wall.color ?? WALL_COLOR, 1, -angle, 'wallPaint');
+      const mesh = boxAt(group, end - start, thickness, height, x, z, base, colors.right, 1, -angle, 'wallPaint');
+      const left = material(colors.left, 1, 'wallPaint');
+      const right = material(colors.right, 1, 'wallPaint');
+      const top = material(wall.color ?? colors.right, 1, 'wallPaint');
+      // BoxGeometry: +Z é a face direita e -Z a face esquerda ao seguir A → B.
+      mesh.material = [right, right, top, top, right, left];
     };
 
     /** O rodapé só existe no lado da parede que dá para um cômodo ou piso manual. */

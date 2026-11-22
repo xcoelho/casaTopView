@@ -4,7 +4,7 @@ import { FLOORS, floorMaterial, roomAreaCm2, wallParts } from './document';
 import { WALL_HEIGHT, openingHeight } from './constants';
 import { dist } from './geometry';
 import { getDef } from '../catalog/registry';
-import { floorKeyForPisoDef } from '../catalog/items/pisos';
+import { floorKeyForPisoDef } from '../catalog/floors';
 
 export const OPENING_LABELS: Record<OpeningKind, string> = {
   porta: 'Porta',

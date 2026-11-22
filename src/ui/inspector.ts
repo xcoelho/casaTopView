@@ -1,5 +1,5 @@
 /** Painel direito com propriedades da seleção e do documento. */
-import { DEFAULT_DOOR_COLOR, DEFAULT_WALL_COLOR, DOOR_COLORS, FLOORS, WALL_COLORS } from '../core/document';
+import { BACKGROUND_COLORS, DEFAULT_DOOR_COLOR, DOOR_COLORS, FLOORS, wallFaceColors, WALL_COLORS } from '../core/document';
 import type { Item, Opening, Room, Wall } from '../core/document';
 import { roomAreaCm2 } from '../core/document';
 import { getDef } from '../catalog/registry';
@@ -265,6 +265,7 @@ export function mountInspector(shell: Shell, deps: InspectorDeps): InspectorHand
     const length = wallLength(wall);
     const angle = (Math.atan2(wall.b.y - wall.a.y, wall.b.x - wall.a.x) * 180) / Math.PI;
     const openings = store.doc.openings.filter((o) => o.wallId === wall.id);
+    const colors = wallFaceColors(wall);
     return [
       section(
         'Parede',
@@ -292,14 +293,15 @@ export function mountInspector(shell: Shell, deps: InspectorDeps): InspectorHand
             }),
         }),
         readOnlyRow('Aberturas', String(openings.length)),
-        swatchField(
-          'Cor da parede (3D)',
-          WALL_COLORS,
-          wall.color ?? DEFAULT_WALL_COLOR,
-          (value) =>
-            store.tx('Cor da parede', () => {
-              wall.color = value;
-            }),
+        swatchField('Face esquerda (A → B)', WALL_COLORS, colors.left, (value) =>
+          store.tx('Cor da face esquerda', () => {
+            wall.colorLeft = value;
+          }),
+        ),
+        swatchField('Face direita (A → B)', WALL_COLORS, colors.right, (value) =>
+          store.tx('Cor da face direita', () => {
+            wall.colorRight = value;
+          }),
         ),
         el(
           'div',
@@ -487,6 +489,28 @@ export function mountInspector(shell: Shell, deps: InspectorDeps): InspectorHand
           store.tx('Grade', () => {
             store.doc.settings.showGrid = checked;
           }),
+        ),
+        swatchField('Cor de fundo', BACKGROUND_COLORS, settings.background, (value) =>
+          store.tx('Cor de fundo', () => {
+            store.doc.settings.background = value;
+          }),
+        ),
+        field(
+          'Outra cor',
+          (() => {
+            const input = el('input', {
+              type: 'color',
+              value: settings.background,
+              title: 'Escolher outra cor de fundo',
+              style: { width: '100%', height: '32px', padding: '2px', cursor: 'pointer' },
+            }) as HTMLInputElement;
+            input.addEventListener('change', () =>
+              store.tx('Cor de fundo', () => {
+                store.doc.settings.background = input.value;
+              }),
+            );
+            return input;
+          })(),
         ),
         toggleRow('Encaixar ao arrastar', settings.snap, (checked) =>
           store.tx('Encaixe', () => {

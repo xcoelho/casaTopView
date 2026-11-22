@@ -1,7 +1,6 @@
 /** Paredes desenhadas como blocos com os vãos das aberturas. */
 import type { Plan, Wall } from '../../core/document';
-import { wallParts } from '../../core/document';
-import { THEME } from '../theme';
+import { wallFaceColors, wallParts } from '../../core/document';
 import type { Camera } from '../viewport';
 
 export interface WallFrame {
@@ -25,27 +24,33 @@ export function drawWalls(
 ): void {
   if (!plan.walls.length) return;
   ctx.setTransform(dpr * cam.zoom, 0, 0, dpr * cam.zoom, dpr * cam.x, dpr * cam.y);
-  ctx.fillStyle = THEME.wallFill;
-
   for (const wall of plan.walls) {
     const frame = wallFrame(wall);
     if (frame.length < 0.5) continue;
     const parts = wallParts(wall, plan.openings);
+    const colors = wallFaceColors(wall);
     ctx.save();
     ctx.translate(wall.a.x, wall.a.y);
     ctx.rotate(frame.angle);
     for (const [start, end] of parts) {
       if (end - start <= 0.4) continue;
-      ctx.fillRect(start, -wall.thickness / 2, end - start, wall.thickness);
+      ctx.fillStyle = colors.left;
+      ctx.fillRect(start, -wall.thickness / 2, end - start, wall.thickness / 2);
+      ctx.fillStyle = colors.right;
+      ctx.fillRect(start, 0, end - start, wall.thickness / 2);
     }
     if (parts.length) {
-      // junções arredondadas para fechar cantos
-      ctx.beginPath();
-      ctx.arc(0, 0, wall.thickness / 2, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.beginPath();
-      ctx.arc(frame.length, 0, wall.thickness / 2, 0, Math.PI * 2);
-      ctx.fill();
+      // Semicírculos mantêm as duas cores até as extremidades da parede.
+      for (const x of [0, frame.length]) {
+        ctx.fillStyle = colors.left;
+        ctx.beginPath();
+        ctx.arc(x, 0, wall.thickness / 2, Math.PI, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = colors.right;
+        ctx.beginPath();
+        ctx.arc(x, 0, wall.thickness / 2, 0, Math.PI);
+        ctx.fill();
+      }
     }
     ctx.restore();
   }
