@@ -2,6 +2,9 @@ import type { FloorKey } from '../core/document';
 
 const FLOOR_KEYS: Record<string, FloorKey> = {
   'piso-madeira': 'madeira',
+  'piso-amadeirado': 'amadeirado',
+  'piso-granito': 'granito',
+  'piso-marmore': 'marmore',
   'piso-porcelanato': 'porcelanato',
   'piso-ceramica': 'ceramica',
   'piso-concreto': 'concreto',

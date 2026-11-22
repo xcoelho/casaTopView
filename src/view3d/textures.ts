@@ -213,8 +213,11 @@ export interface FloorTextureSet {
 /** Tamanho do patch em cm; as UVs do piso já vêm nas coordenadas do mundo. */
 const FLOOR_PATCH: Record<FloorKey, number> = {
   madeira: 240,
+  amadeirado: 200,
   porcelanato: 240,
   ceramica: 264,
+  granito: 240,
+  marmore: 240,
   concreto: 200,
   carpete: 160,
   grama: 180,
@@ -335,6 +338,291 @@ function drawWoodFloor(ctx: CanvasRenderingContext2D, s: number, base: string, l
       0,
       Math.PI * 2,
     );
+    ctx.stroke();
+  }
+}
+
+/** Granito preto polido: nuvens minerais, quartzo e pintas metálicas. */
+function drawGraniteFloor(ctx: CanvasRenderingContext2D, s: number, base: string, line: string): void {
+  ctx.fillStyle = base;
+  ctx.fillRect(0, 0, s, s);
+  const rand = seededRandom(707);
+
+  for (let i = 0; i < 70; i++) {
+    ctx.fillStyle =
+      rand() > 0.5
+        ? `rgba(214, 218, 224, ${0.015 + rand() * 0.03})`
+        : `rgba(8, 10, 12, ${0.02 + rand() * 0.04})`;
+    wrappedEllipse(
+      ctx,
+      s,
+      rand() * s,
+      rand() * s,
+      18 + rand() * 92,
+      12 + rand() * 64,
+      rand() * Math.PI,
+    );
+  }
+
+  // Cristais de quartzo claros.
+  for (let i = 0; i < 620; i++) {
+    const v = 196 + Math.floor(rand() * 59);
+    ctx.fillStyle = `rgba(${v},${v},${Math.min(255, v + 4)},${0.25 + rand() * 0.55})`;
+    const r = 0.7 + rand() * 1.9;
+    ctx.fillRect(rand() * s, rand() * s, r, r * (0.7 + rand() * 0.8));
+  }
+
+  // Pintas escuras do granito.
+  for (let i = 0; i < 2600; i++) {
+    const v = 18 + Math.floor(rand() * 38);
+    ctx.fillStyle = `rgba(${v},${v + 2},${v + 5},${0.35 + rand() * 0.45})`;
+    ctx.fillRect(rand() * s, rand() * s, 0.6 + rand() * 1.4, 0.6 + rand() * 1.4);
+  }
+
+  // Faíscas de mica e ouro.
+  for (let i = 0; i < 380; i++) {
+    const gold = rand() > 0.45;
+    ctx.fillStyle = gold
+      ? `rgba(${186 + Math.floor(rand() * 50)},${140 + Math.floor(rand() * 48)},${76 + Math.floor(rand() * 44)},${0.3 + rand() * 0.45})`
+      : `rgba(222, 226, 231, ${0.3 + rand() * 0.4})`;
+    ctx.fillRect(rand() * s, rand() * s, 0.6 + rand() * 1.1, 0.6 + rand() * 1.1);
+  }
+
+  // Juntas de 60 cm entre as chapas.
+  const tiles = 4;
+  const tile = s / tiles;
+  ctx.strokeStyle = line;
+  ctx.lineWidth = 2.2;
+  ctx.beginPath();
+  for (let i = 0; i < tiles; i++) {
+    const p = i * tile + 0.5;
+    ctx.moveTo(p, 0);
+    ctx.lineTo(p, s);
+    ctx.moveTo(0, p);
+    ctx.lineTo(s, p);
+  }
+  ctx.stroke();
+
+  ctx.strokeStyle = 'rgba(255, 255, 255, 0.055)';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  for (let i = 0; i < tiles; i++) {
+    const p = i * tile + 2.2;
+    ctx.moveTo(p, 0);
+    ctx.lineTo(p, s);
+    ctx.moveTo(0, p);
+    ctx.lineTo(s, p);
+  }
+  ctx.stroke();
+}
+
+/** Mármore crema com veios profundos; cada chapa tem veio e tom próprios. */
+function drawMarbleFloor(ctx: CanvasRenderingContext2D, s: number, base: string, line: string): void {
+  ctx.fillStyle = base;
+  ctx.fillRect(0, 0, s, s);
+  const rand = seededRandom(808);
+
+  // Nuvens de tom (marfim, mel e cinza) que dão profundidade à pedra.
+  for (let i = 0; i < 46; i++) {
+    const warm = rand() > 0.42;
+    ctx.fillStyle = warm
+      ? `rgba(255, 238, 205, ${0.05 + rand() * 0.07})`
+      : `rgba(150, 132, 104, ${0.04 + rand() * 0.06})`;
+    wrappedEllipse(
+      ctx,
+      s,
+      rand() * s,
+      rand() * s,
+      26 + rand() * 110,
+      18 + rand() * 78,
+      rand() * Math.PI,
+    );
+  }
+
+  const tiles = 2;
+  const tile = s / tiles;
+  for (let row = 0; row < tiles; row++) {
+    for (let col = 0; col < tiles; col++) {
+      const x0 = col * tile;
+      const y0 = row * tile;
+      ctx.save();
+      ctx.beginPath();
+      ctx.rect(x0, y0, tile, tile);
+      ctx.clip();
+
+      // Veios principais: halo difuso, núcleo escuro e brilho superior.
+      for (let v = 0; v < 5; v++) {
+        const phase = rand() * Math.PI * 2;
+        const amp = tile * (0.06 + rand() * 0.14);
+        const startY = y0 - tile * 0.2 + rand() * tile * 1.4;
+        const freq = 1.2 + rand() * 1.8;
+        const width = 3 + rand() * 9;
+        const gold = (v + row * 2 + col) % 3 === 0;
+        const r = gold ? 188 : 112;
+        const g = gold ? 152 : 92;
+        const b = gold ? 88 : 66;
+        ctx.strokeStyle = `rgba(${r},${g},${b},0.1)`;
+        ctx.lineWidth = width * 3.2;
+        ctx.beginPath();
+        for (let x = x0; x <= x0 + tile; x += 6) {
+          const t = (x - x0) / tile;
+          const y =
+            startY +
+            Math.sin(t * Math.PI * 2 * freq + phase) * amp +
+            Math.sin(t * Math.PI * 5 + phase * 2) * amp * 0.25;
+          if (x === x0) ctx.moveTo(x, y);
+          else ctx.lineTo(x, y);
+        }
+        ctx.stroke();
+        ctx.strokeStyle = `rgba(${r - 28},${g - 24},${b - 18},0.38)`;
+        ctx.lineWidth = width;
+        ctx.stroke();
+        ctx.strokeStyle = 'rgba(248, 240, 222, 0.2)';
+        ctx.lineWidth = Math.max(0.7, width * 0.22);
+        ctx.stroke();
+      }
+
+      // Veios finos de tensão.
+      for (let v = 0; v < 14; v++) {
+        const phase = rand() * Math.PI * 2;
+        const startY = y0 + rand() * tile;
+        const amp = tile * (0.01 + rand() * 0.05);
+        const freq = 2 + rand() * 4;
+        ctx.strokeStyle =
+          rand() > 0.4
+            ? `rgba(126, 108, 82, ${0.08 + rand() * 0.12})`
+            : `rgba(255, 248, 232, ${0.08 + rand() * 0.12})`;
+        ctx.lineWidth = 0.6 + rand() * 1.1;
+        ctx.beginPath();
+        for (let x = x0; x <= x0 + tile; x += 5) {
+          const t = (x - x0) / tile;
+          const y = startY + Math.sin(t * Math.PI * 2 * freq + phase) * amp;
+          if (x === x0) ctx.moveTo(x, y);
+          else ctx.lineTo(x, y);
+        }
+        ctx.stroke();
+      }
+      ctx.restore();
+    }
+  }
+
+  // Pontos de pirita e poros da pedra.
+  for (let i = 0; i < 700; i++) {
+    const warm = rand() > 0.5;
+    ctx.fillStyle = warm
+      ? `rgba(168, 142, 96, ${0.05 + rand() * 0.1})`
+      : `rgba(250, 244, 228, ${0.06 + rand() * 0.1})`;
+    ctx.fillRect(rand() * s, rand() * s, 0.5 + rand() * 1.2, 0.5 + rand() * 1.2);
+  }
+
+  // Juntas de 120 cm entre as chapas, com bisel claro.
+  ctx.strokeStyle = line;
+  ctx.lineWidth = 2.4;
+  ctx.beginPath();
+  for (let i = 0; i < tiles; i++) {
+    const p = i * tile + 0.5;
+    ctx.moveTo(p, 0);
+    ctx.lineTo(p, s);
+    ctx.moveTo(0, p);
+    ctx.lineTo(s, p);
+  }
+  ctx.stroke();
+  ctx.strokeStyle = 'rgba(255, 252, 240, 0.16)';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  for (let i = 0; i < tiles; i++) {
+    const p = i * tile + 2.4;
+    ctx.moveTo(p, 0);
+    ctx.lineTo(p, s);
+    ctx.moveTo(0, p);
+    ctx.lineTo(s, p);
+  }
+  ctx.stroke();
+}
+
+/** Madeira nobre: tábuas largas mel/nogueira, veio acentuado e verniz. */
+function drawAmadeiradoFloor(ctx: CanvasRenderingContext2D, s: number, base: string, line: string): void {
+  ctx.fillStyle = base;
+  ctx.fillRect(0, 0, s, s);
+  const rand = seededRandom(909);
+  const rows = 8;
+  const rowH = s / rows;
+  const plankW = s / 2;
+
+  for (let row = 0; row < rows; row++) {
+    const y = row * rowH;
+    const offset = row % 2 ? plankW / 2 : 0;
+
+    for (let x = offset - plankW; x < s; x += plankW) {
+      const x0 = Math.max(0, x);
+      const x1 = Math.min(s, x + plankW);
+      if (x1 <= x0) continue;
+      const tone =
+        Math.abs(Math.sin((Math.round(x / plankW) + row) * 7.31) * 43758.5453) % 1;
+      ctx.fillStyle =
+        tone > 0.52
+          ? `rgba(58, 30, 12, ${0.1 + tone * 0.16})`
+          : `rgba(255, 196, 128, ${0.045 + tone * 0.07})`;
+      ctx.fillRect(x0, y, x1 - x0, rowH);
+
+      // Veios longos e paralelos, com ondulação suave.
+      for (let g = 0; g < 7; g++) {
+        const gy = y + rowH * (0.1 + g * 0.13) + rand() * rowH * 0.05;
+        const amp = 0.8 + rand() * 2.4;
+        const freq = 1.5 + Math.floor(rand() * 3);
+        const phase = rand() * Math.PI * 2;
+        ctx.strokeStyle =
+          rand() > 0.42
+            ? `rgba(52, 26, 10, ${0.08 + rand() * 0.16})`
+            : `rgba(255, 214, 158, ${0.05 + rand() * 0.11})`;
+        ctx.lineWidth = 0.7 + rand() * 1.5;
+        ctx.beginPath();
+        for (let px = x0; px <= x1; px += 7) {
+          const yy = gy + Math.sin((px / s) * Math.PI * 2 * freq + phase) * amp;
+          if (px === x0) ctx.moveTo(px, yy);
+          else ctx.lineTo(px, yy);
+        }
+        ctx.stroke();
+      }
+    }
+
+    // Junta horizontal entre as fiadas, com sombra e brilho de verniz.
+    ctx.strokeStyle = line;
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(0, y + 0.5);
+    ctx.lineTo(s, y + 0.5);
+    ctx.stroke();
+    ctx.strokeStyle = 'rgba(255, 219, 170, 0.16)';
+    ctx.lineWidth = 0.9;
+    ctx.beginPath();
+    ctx.moveTo(0, y + 2.2);
+    ctx.lineTo(s, y + 2.2);
+    ctx.stroke();
+
+    // Juntas verticais desencontradas.
+    ctx.strokeStyle = line;
+    ctx.lineWidth = 1.8;
+    ctx.beginPath();
+    for (let x = offset; x < s; x += plankW) {
+      ctx.moveTo(x + 0.5, y);
+      ctx.lineTo(x + 0.5, y + rowH);
+    }
+    ctx.stroke();
+  }
+
+  // Nós da madeira, discretos.
+  for (let i = 0; i < 8; i++) {
+    const kx = rand() * s;
+    const ky = rand() * s;
+    ctx.strokeStyle = 'rgba(48, 24, 8, 0.22)';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.ellipse(kx, ky, 2 + rand() * 3, 1.2 + rand() * 1.8, rand() * Math.PI, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.strokeStyle = 'rgba(255, 208, 150, 0.12)';
+    ctx.beginPath();
+    ctx.ellipse(kx, ky, 4 + rand() * 4, 2.6 + rand() * 2.4, rand() * Math.PI, 0, Math.PI * 2);
     ctx.stroke();
   }
 }
@@ -583,6 +871,15 @@ function drawFloorTexture(
     case 'grama':
       drawGrassFloor(ctx, s, base, line);
       break;
+    case 'granito':
+      drawGraniteFloor(ctx, s, base, line);
+      break;
+    case 'marmore':
+      drawMarbleFloor(ctx, s, base, line);
+      break;
+    case 'amadeirado':
+      drawAmadeiradoFloor(ctx, s, base, line);
+      break;
     default:
       ctx.fillStyle = base;
       ctx.fillRect(0, 0, s, s);
@@ -595,9 +892,11 @@ export function floorTexture(key: FloorKey, base: string, line: string): FloorTe
   const cached = floorTextures.get(key);
   if (cached) return cached;
 
+  // Os pisos de pedra e madeira nobre ganham mais resolução para os detalhes finos.
+  const detail = key === 'granito' || key === 'marmore' || key === 'amadeirado' ? 768 : 512;
   const map = makeTexture(
     `floor-${key}`,
-    512,
+    detail,
     (ctx, s) => drawFloorTexture(ctx, s, key, base, line),
     1 / FLOOR_PATCH[key],
   );

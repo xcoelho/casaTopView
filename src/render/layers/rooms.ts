@@ -3,7 +3,7 @@ import type { Plan } from '../../core/document';
 import { roomAreaCm2 } from '../../core/document';
 import { polygonCentroid } from '../../core/geometry';
 import { fmtArea } from '../../core/units';
-import { FONT, THEME, paintFloor } from '../theme';
+import { FONT, floorInk, paintFloor } from '../theme';
 import type { Camera } from '../viewport';
 import { worldToScreen } from '../viewport';
 
@@ -44,11 +44,12 @@ export function drawRooms(
     if (areaCm2 < 400) continue;
     const showName = opts.showNames !== false;
     const showArea = opts.showAreas !== false;
+    const ink = floorInk(room.floor);
 
     ctx.save();
     if (showName) {
       ctx.font = `600 11px ${FONT}`;
-      ctx.fillStyle = THEME.inkSoft;
+      ctx.fillStyle = ink.name;
       const name = room.name.toUpperCase();
       const letters = name.split('');
       const spacing = 0.9;
@@ -64,7 +65,7 @@ export function drawRooms(
     }
     if (showArea) {
       ctx.font = `500 10px ${FONT}`;
-      ctx.fillStyle = THEME.inkFaint;
+      ctx.fillStyle = ink.area;
       ctx.fillText(fmtArea(areaCm2), center.x, center.y + (showName ? 8 : 0));
     }
     ctx.restore();

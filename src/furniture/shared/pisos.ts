@@ -94,6 +94,64 @@ export function paintFloorPattern(
       }
       break;
     }
+    case 'granito': {
+      const slab = 60;
+      for (let x = 0; x <= w; x += slab) {
+        ctx.moveTo(x, 0);
+        ctx.lineTo(x, d);
+      }
+      for (let y = 0; y <= d; y += slab) {
+        ctx.moveTo(0, y);
+        ctx.lineTo(w, y);
+      }
+      break;
+    }
+    case 'marmore': {
+      if (zoom > 0.18) {
+        ctx.save();
+        ctx.strokeStyle = 'rgba(132, 108, 74, 0.2)';
+        for (let v = 0; v < 3; v++) {
+          ctx.lineWidth = 2.4 - v * 0.5;
+          ctx.beginPath();
+          const baseY = d * (0.22 + v * 0.28);
+          const amp = d * 0.05;
+          const phase = v * 2.1;
+          for (let x = 0; x <= w; x += 8) {
+            const t = x / Math.max(w, 1);
+            const y = baseY + Math.sin(t * Math.PI * 2 * (1.1 + v * 0.5) + phase) * amp;
+            if (x === 0) ctx.moveTo(x, y);
+            else ctx.lineTo(x, y);
+          }
+          ctx.stroke();
+        }
+        ctx.restore();
+      }
+      ctx.beginPath();
+      const slab = 120;
+      for (let x = 0; x <= w; x += slab) {
+        ctx.moveTo(x, 0);
+        ctx.lineTo(x, d);
+      }
+      for (let y = 0; y <= d; y += slab) {
+        ctx.moveTo(0, y);
+        ctx.lineTo(w, y);
+      }
+      break;
+    }
+    case 'amadeirado': {
+      const row = 20;
+      const plank = 120;
+      for (let y = 0; y <= d; y += row) {
+        ctx.moveTo(0, y);
+        ctx.lineTo(w, y);
+        const offset = Math.round(y / row) % 2 ? plank / 2 : 0;
+        for (let x = offset; x <= w; x += plank) {
+          ctx.moveTo(x, y);
+          ctx.lineTo(x, Math.min(y + row, d));
+        }
+      }
+      break;
+    }
   }
   ctx.stroke();
   ctx.restore();

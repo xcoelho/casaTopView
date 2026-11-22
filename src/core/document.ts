@@ -93,7 +93,7 @@ export const DOOR_COLORS: DoorColor[] = [
   { name: 'Preto', value: '#33373c' },
 ];
 
-export type FloorKey = 'madeira' | 'porcelanato' | 'ceramica' | 'concreto' | 'carpete' | 'grama';
+export type FloorKey = 'madeira' | 'amadeirado' | 'porcelanato' | 'ceramica' | 'granito' | 'marmore' | 'concreto' | 'carpete' | 'grama';
 
 export interface FloorMaterial {
   key: FloorKey;
@@ -104,8 +104,11 @@ export interface FloorMaterial {
 
 export const FLOORS: FloorMaterial[] = [
   { key: 'madeira', name: 'Madeira', base: '#e9d9c0', line: 'rgba(150, 112, 72, 0.32)' },
+  { key: 'amadeirado', name: 'Amadeirado', base: '#8a5a34', line: 'rgba(58, 32, 16, 0.55)' },
   { key: 'porcelanato', name: 'Porcelanato', base: '#efece4', line: 'rgba(130, 130, 124, 0.18)' },
   { key: 'ceramica', name: 'Cerâmica', base: '#e8e5db', line: 'rgba(112, 122, 124, 0.26)' },
+  { key: 'granito', name: 'Granito', base: '#3c4046', line: 'rgba(18, 21, 25, 0.62)' },
+  { key: 'marmore', name: 'Mármore', base: '#e0cfae', line: 'rgba(126, 104, 74, 0.42)' },
   { key: 'concreto', name: 'Concreto', base: '#dedbd2', line: 'rgba(96, 100, 104, 0.14)' },
   { key: 'carpete', name: 'Carpete', base: '#dcd6c7', line: 'rgba(124, 112, 96, 0.2)' },
   { key: 'grama', name: 'Grama', base: '#ccd8b6', line: 'rgba(88, 108, 68, 0.26)' },

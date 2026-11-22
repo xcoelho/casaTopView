@@ -28,6 +28,23 @@ export const THEME = {
   metal: '#8d9498',
 };
 
+function relativeLuminance(hex: string): number {
+  const value = hex.replace('#', '');
+  if (value.length !== 6) return 1;
+  const channel = (offset: number): number => {
+    const v = parseInt(value.slice(offset, offset + 2), 16) / 255;
+    return v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4;
+  };
+  return 0.2126 * channel(0) + 0.7152 * channel(2) + 0.0722 * channel(4);
+}
+
+/** Texto do cômodo: claro sobre pisos escuros, escuro sobre os claros. */
+export function floorInk(floor: FloorKey): { name: string; area: string } {
+  return relativeLuminance(floorMaterial(floor).base) < 0.28
+    ? { name: 'rgba(247, 246, 241, 0.94)', area: 'rgba(238, 236, 229, 0.72)' }
+    : { name: THEME.inkSoft, area: THEME.inkFaint };
+}
+
 export function paintFloor(
   ctx: CanvasRenderingContext2D,
   points: Vec2[],
@@ -120,6 +137,64 @@ export function paintFloor(
           const jitter = (Math.round(x / 26) + Math.round(y / 18)) % 2 ? 5 : -4;
           ctx.moveTo(x, y);
           ctx.lineTo(x + 4, y + jitter);
+        }
+      }
+      break;
+    }
+    case 'granito': {
+      const slab = 60;
+      for (let x = Math.floor(bounds.x / slab) * slab; x <= bounds.x + bounds.w; x += slab) {
+        ctx.moveTo(x, bounds.y);
+        ctx.lineTo(x, bounds.y + bounds.h);
+      }
+      for (let y = Math.floor(bounds.y / slab) * slab; y <= bounds.y + bounds.h; y += slab) {
+        ctx.moveTo(bounds.x, y);
+        ctx.lineTo(bounds.x + bounds.w, y);
+      }
+      break;
+    }
+    case 'marmore': {
+      if (zoom > 0.18) {
+        ctx.save();
+        ctx.strokeStyle = 'rgba(132, 108, 74, 0.2)';
+        for (let v = 0; v < 3; v++) {
+          ctx.lineWidth = 2.4 - v * 0.5;
+          ctx.beginPath();
+          const baseY = bounds.y + bounds.h * (0.22 + v * 0.28);
+          const amp = bounds.h * 0.05;
+          const phase = v * 2.1;
+          for (let x = bounds.x; x <= bounds.x + bounds.w; x += 10) {
+            const t = (x - bounds.x) / Math.max(bounds.w, 1);
+            const y = baseY + Math.sin(t * Math.PI * 2 * (1.1 + v * 0.5) + phase) * amp;
+            if (x === bounds.x) ctx.moveTo(x, y);
+            else ctx.lineTo(x, y);
+          }
+          ctx.stroke();
+        }
+        ctx.restore();
+      }
+      ctx.beginPath();
+      const slab = 120;
+      for (let x = Math.floor(bounds.x / slab) * slab; x <= bounds.x + bounds.w; x += slab) {
+        ctx.moveTo(x, bounds.y);
+        ctx.lineTo(x, bounds.y + bounds.h);
+      }
+      for (let y = Math.floor(bounds.y / slab) * slab; y <= bounds.y + bounds.h; y += slab) {
+        ctx.moveTo(bounds.x, y);
+        ctx.lineTo(bounds.x + bounds.w, y);
+      }
+      break;
+    }
+    case 'amadeirado': {
+      const row = 20;
+      const plank = 120;
+      for (let y = Math.floor(bounds.y / row) * row; y <= bounds.y + bounds.h; y += row) {
+        ctx.moveTo(bounds.x, y);
+        ctx.lineTo(bounds.x + bounds.w, y);
+        const offset = Math.round(y / row) % 2 ? plank / 2 : 0;
+        for (let x = Math.floor((bounds.x - offset) / plank) * plank + offset; x <= bounds.x + bounds.w; x += plank) {
+          ctx.moveTo(x, y);
+          ctx.lineTo(x, Math.min(y + row, bounds.y + bounds.h));
         }
       }
       break;

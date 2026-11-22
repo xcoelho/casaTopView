@@ -45,8 +45,11 @@ const doubleSided = new Map<THREE.Material, THREE.Material>();
 
 const FLOOR_ROUGHNESS: Record<FloorKey, number> = {
   madeira: 0.52,
+  amadeirado: 0.4,
   porcelanato: 0.3,
   ceramica: 0.38,
+  granito: 0.18,
+  marmore: 0.15,
   concreto: 0.82,
   carpete: 0.96,
   grama: 0.94,
@@ -54,8 +57,11 @@ const FLOOR_ROUGHNESS: Record<FloorKey, number> = {
 
 const FLOOR_BUMP: Record<FloorKey, number> = {
   madeira: 0.2,
+  amadeirado: 0.35,
   porcelanato: 0.4,
   ceramica: 0.4,
+  granito: 0.3,
+  marmore: 0.26,
   concreto: 0.3,
   carpete: 0.15,
   grama: 0.18,
@@ -63,8 +69,11 @@ const FLOOR_BUMP: Record<FloorKey, number> = {
 
 const FLOOR_ENV: Record<FloorKey, number> = {
   madeira: 0.3,
+  amadeirado: 0.4,
   porcelanato: 0.5,
   ceramica: 0.45,
+  granito: 0.8,
+  marmore: 0.85,
   concreto: 0.25,
   carpete: 0.15,
   grama: 0.2,
@@ -297,7 +306,7 @@ export function floorSurface(key: FloorKey): THREE.Material {
 
   const info = floorMaterial(key);
   const texture = floorTexture(key, info.base, info.line);
-  const created = new THREE.MeshStandardMaterial({
+  const surface: THREE.MeshStandardMaterialParameters = {
     color: '#ffffff',
     map: texture.map,
     bumpMap: texture.bump,
@@ -306,7 +315,27 @@ export function floorSurface(key: FloorKey): THREE.Material {
     metalness: 0,
     envMapIntensity: FLOOR_ENV[key],
     side: THREE.DoubleSide,
-  });
+  };
+
+  // Pedra polida e madeira envernizada ganham uma camada de verniz especular.
+  let created: THREE.Material;
+  if (key === 'granito' || key === 'marmore') {
+    created = new THREE.MeshPhysicalMaterial({
+      ...surface,
+      clearcoat: 1,
+      clearcoatRoughness: 0.05,
+      ior: 1.5,
+    });
+  } else if (key === 'amadeirado') {
+    created = new THREE.MeshPhysicalMaterial({
+      ...surface,
+      clearcoat: 0.45,
+      clearcoatRoughness: 0.16,
+      ior: 1.45,
+    });
+  } else {
+    created = new THREE.MeshStandardMaterial(surface);
+  }
   floorMaterials.set(key, created);
   return created;
 }
