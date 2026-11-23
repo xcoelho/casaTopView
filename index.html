@@ -19,18 +19,15 @@
     <div id="app"></div>
     <script type="module" src="/src/main.ts"></script>
     <script>
-      // Só aparece quando este arquivo-fonte é aberto direto pelo disco. No
-      // build autocontido o script de /src/main.ts não existe mais, então o
-      // aviso não aparece e o app ocupa a tela inteira.
+      // Ao abrir este arquivo-fonte direto pelo disco, encaminha para o build
+      // autocontido. No servidor de desenvolvimento nada acontece.
       if (location.protocol === 'file:' && document.querySelector('script[src="/src/main.ts"]')) {
         document.getElementById('app').innerHTML =
           '<div style="max-width:620px;margin:12vh auto;padding:28px 30px;border:1px solid #e5dfd2;border-radius:14px;background:#fffdf8;font-family:Inter,Segoe UI,system-ui,sans-serif;color:#1f242b;line-height:1.55">' +
-          '<h1 style="margin:0 0 10px;font-size:20px">casaTopView precisa ser servido</h1>' +
-          '<p style="margin:0 0 16px;color:#59616d">Este <code>index.html</code> é a entrada de desenvolvimento do Vite e não pode ser aberto diretamente pelo disco.</p>' +
-          '<p style="margin:0 0 8px"><b>Desenvolvimento:</b> rode <code>npm run dev</code> e abra <code>http://localhost:5173</code>.</p>' +
-          '<p style="margin:0 0 18px"><b>Uso offline:</b> rode <code>npm run build</code> e abra <code>dist/index.html</code> (arquivo autocontido).</p>' +
-          '<a href="dist/index.html" style="display:inline-block;padding:9px 14px;border-radius:8px;background:#0f766e;color:#fff;text-decoration:none;font-weight:600">Abrir a versão compilada</a>' +
+          '<h1 style="margin:0 0 10px;font-size:20px">Abrindo a versão compilada…</h1>' +
+          '<p style="margin:0;color:#59616d">Se a página não abrir, rode <code>npm run build</code> e recarregue este arquivo.</p>' +
           '</div>';
+        location.replace('dist/index.html');
       }
     </script>
   </body>

@@ -296,14 +296,76 @@ export function build({ body, palette }: ModelBuildContext): void {
 - `accent` é o estofado nos dois lados; `main` é a madeira. Assim o inspetor troca os dois acabamentos e o 2D/3D acompanham.
 - As pernas usam `coneAt` com raio de topo menor que o da base (2 e 2,5), o que dá o afunilamento típico de cadeira.
 
+## Exemplo completo: uma porta simples
+
+Portas e janelas são **aberturas de parede**, não móveis soltos. A abertura guarda o `defId` do pacote, e o 3D da folha vem de `src/furniture/<id>/model.ts` — o mesmo padrão dos móveis. A parede e o vão continuam em `src/view3d/architecture.ts`.
+
+Medidas: 80 cm de largura, 15 cm de profundidade do símbolo 2D e 208 cm de altura do vão (`DOOR_HEIGHT`; a parede tem `WALL_HEIGHT` = 262 cm).
+
+### definition.ts
+
+~~~ts
+import type { FurnitureDef } from '../../catalog/types';
+import { doorSymbol } from '../shared/aberturas';
+
+export default {
+  id: 'porta-simples',
+  name: 'Porta simples',
+  category: 'aberturas',
+  w: 80,
+  d: 15,
+  kind: 'opening',
+  opening: { kind: 'porta', width: 80 },
+  keywords: ['porta', 'abertura'],
+  draw: ({ ctx, w, d }) => doorSymbol(ctx, w, d, false, false),
+} satisfies FurnitureDef;
+~~~
+
+### model.ts
+
+~~~ts
+import type { OpeningBuildContext } from '../../view3d/modelApi';
+import { boxAt } from '../../view3d/modelApi';
+import { addSwingLeaf } from '../shared/porta-3d';
+
+export const modelId = 'porta-simples';
+
+export function buildOpening({ group, opening, width, height, color }: OpeningBuildContext): void {
+  addSwingLeaf(group, opening, width, (leaf, leafWidth, side) => {
+    boxAt(leaf, leafWidth - 1, 4, height - 2, (side * leafWidth) / 2, 0, 1, color, 1, 0, 'wood');
+    boxAt(leaf, 2, 6, 6, side * (leafWidth - 10), 0, 100, '#8a867d', 1, 0, 'metal');
+  });
+}
+~~~
+
+### O que o app faz com essa definição
+
+- Ao soltar a peça sobre uma parede, `dropFromPalette` cria uma `Opening` em `plan.openings` com `wallId`, `offset` (centro do vão), `kind: 'porta'`, `width: 80` e `defId: 'porta-simples'`.
+- `buildWalls` (`src/view3d/architecture.ts`) deixa o trecho da parede aberto até `openingHeight('porta')` (208 cm) e fecha acima disso até `WALL_HEIGHT` (262 cm).
+- Em seguida, `architecture.ts` resolve o pacote com `resolveOpeningDefId` e chama o `buildOpening` do `model.ts`. O grupo entregue já está centrado no vão e girado com a parede: `+X` corre ao longo dela, `+Y` sobe e `+Z` atravessa a espessura.
+- `addSwingLeaf` (`src/furniture/shared/porta-3d.ts`) posiciona a folha na dobradiça, aplica a entreabertura de 62° e respeita `hinge` e `flip`.
+- A cor sai de `opening.color`, escolhida no inspetor em **Cor da folha** (`DOOR_COLORS`, padrão `#d9c4a5`); sem cor, o contexto entrega `DEFAULT_DOOR_COLOR`.
+- `draw` desenha o símbolo da miniatura e da prévia de arraste. Na planta, a abertura é desenhada sobre a parede por `src/render/layers/openings.ts`, que continua escolhendo o símbolo por `kind`.
+- Em aberturas, `colors`, `colorKeys`, `modelHeight`, `modelBase` e `build` continuam sem uso. O contrato do 3D é `modelId` + `buildOpening`.
+
+### Pontos que fazem o exemplo funcionar
+
+- `kind: 'opening'` + `opening` são o que prendem a peça à parede; sem eles a porta vira um móvel solto no chão.
+- `w` e `opening.width` devem coincidir (80): `w` dimensiona o cartão/miniatura e `opening.width` o vão real.
+- `d` é a profundidade do símbolo (15 cm), não a espessura da parede.
+- O símbolo vem de `doorSymbol` em `shared/aberturas.ts` (`double = false`, `sliding = false`); para uma porta de correr, passe `sliding = true`, como em `src/furniture/porta-correr/`.
+- `modelId` deve ser igual ao id da pasta e da definição. `buildOpening` recebe `width` e `height` já limitados ao vão, então a geometria acompanha qualquer largura sem nova tabela de medidas.
+- `boxAt` recebe a **base** em Y (não o centro): `boxAt(leaf, largura, profundidade, altura, x, z, baseY, cor)`. O mesmo vale para as demais primitivas de `view3d/modelApi`.
+- Portas novas não precisam de alteração em `architecture.ts`: crie o `model.ts` com `buildOpening` e o vão passa a usar o pacote pelo `defId`. Plantas antigas, sem `defId`, inferem o pacote pela largura para manter o visual.
+
 ## Como integrar uma peça nova
 
 1. Crie `src/furniture/<id>/definition.ts` com os metadados e o desenho 2D.
-2. Se a peça tiver 3D próprio, crie `src/furniture/<id>/model.ts` na mesma pasta.
+2. Se a peça tiver 3D próprio, crie `src/furniture/<id>/model.ts` na mesma pasta: `build` para móveis ou `buildOpening` para portas.
 3. Rode `npm run typecheck`.
 4. Pronto: catálogo, miniaturas, busca e vista 3D passam a incluir a peça. Nenhum arquivo central precisa ser alterado.
 
-Peças sem `model.ts` continuam no catálogo e na planta 2D; na vista 3D elas usam o modelo genérico da categoria.
+Peças sem `model.ts` continuam no catálogo e na planta 2D; móveis usam o modelo genérico da categoria e portas usam uma folha lisa de fallback.
 
 ## Prompt curto para gerar o pacote
 

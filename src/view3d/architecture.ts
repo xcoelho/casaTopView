@@ -3,9 +3,12 @@ import * as THREE from 'three';
 import type { Plan, Wall } from '../core/document';
 import { DEFAULT_DOOR_COLOR, itemBounds, wallFaceColors, wallParts } from '../core/document';
 import { floorKeyForPisoDef } from '../catalog/floors';
+import { resolveOpeningDefId } from '../catalog/openingDefs';
+import { getWallpaper } from '../core/wallpapers';
 import { pointInPolygon } from '../core/geometry';
-import { shade } from '../catalog/draw';
 import { boxAt, cylinderAt, floorSurface, material, roundedBoxAt, torusAt } from './materials';
+import { getOpeningModel } from './modelRegistry';
+import { wallpaperMaterial } from './wallpaper';
 import {
   DOOR_HEIGHT,
   GARAGE_HEIGHT,
@@ -13,9 +16,8 @@ import {
   WALL_HEIGHT,
   WINDOW_HEAD,
   WINDOW_SILL,
+  openingHeight,
 } from '../core/constants';
-
-const DEG = Math.PI / 180;
 
 export { WALL_HEIGHT };
 const FRAME_COLOR = '#fbfaf6';
@@ -52,63 +54,23 @@ function buildOpening(
   if (opening.kind === 'vao') return;
 
   if (opening.kind.startsWith('porta')) {
-    const doorColor = opening.color ?? DEFAULT_DOOR_COLOR;
-
-    if (opening.kind === 'porta-garagem') {
-      boxAt(frame, width - 4, 4, GARAGE_HEIGHT - 2, 0, 0, 1, doorColor, 1, 0, 'wood');
-      for (let i = 1; i < 8; i++) {
-        boxAt(frame, width - 8, 1.5, 2, 0, 2.2, (GARAGE_HEIGHT / 8) * i, shade(doorColor, -0.14));
-      }
+    const model = getOpeningModel(resolveOpeningDefId(opening.kind, width, opening.defId));
+    const height = openingHeight(opening.kind);
+    if (model?.buildOpening) {
+      model.buildOpening({
+        group: frame,
+        opening,
+        width,
+        height,
+        thickness,
+        color: opening.color ?? DEFAULT_DOOR_COLOR,
+        frame: FRAME_COLOR,
+        glass: GLASS_COLOR,
+      });
       return;
     }
-
-    if (opening.kind === 'porta-correr') {
-      boxAt(frame, width / 2, 3, DOOR_HEIGHT - 4, -width / 4, 2.5, 2, doorColor, 1, 0, 'wood');
-      boxAt(frame, width / 2, 3, DOOR_HEIGHT - 4, width / 4, -2.5, 2, shade(doorColor, -0.1), 1, 0, 'wood');
-      boxAt(frame, width / 2, 4, 3, width / 4, -2.5, 120, '#8a867d');
-      return;
-    }
-
-    const leaves = opening.kind === 'porta-dupla' ? 2 : 1;
-    // buildOpening só recebe Opening (sem defId), então a diferenciação é por
-    // faixa de width: porta-pivotante (100) puxador barra vertical; porta-vidro
-    // (85–100) folha em vidro com moldura de madeira e puxador barra curto.
-    // Existentes não atingem as faixas: porta-simples (80), porta-dupla (150, 2 folhas).
-    const isPivotante = leaves === 1 && width >= 100;
-    const isVidro = leaves === 1 && width >= 85 && width < 100;
-    for (let i = 0; i < leaves; i++) {
-      const atEnd = leaves === 2 ? i === 1 : opening.hinge === 'dir';
-      const hingeDist = atEnd ? end : start;
-      const leafWidth = width / leaves;
-      const hingeX = wall.a.x + ux * hingeDist;
-      const hingeZ = wall.a.y + uy * hingeDist;
-      const side = atEnd ? -1 : 1;
-      const swing = (opening.flip ? -1 : 1) * side * (leaves === 2 ? 1 : 1) * 62 * DEG;
-
-      const leaf = new THREE.Group();
-      leaf.position.set(hingeX, 0, hingeZ);
-      leaf.rotation.y = -angle + swing;
-      group.add(leaf);
-
-      if (isVidro) {
-        const glassWidth = leafWidth - 10;
-        boxAt(leaf, glassWidth, 2, DOOR_HEIGHT - 12, (side * leafWidth) / 2, 0, 6, GLASS_COLOR, 0.5, 0, 'glass');
-        // Moldura de madeira nas bordas: 2 montantes + 2 travessas.
-        boxAt(leaf, 5, 5, DOOR_HEIGHT - 2, side * 2.5, 0, 1, doorColor, 1, 0, 'wood');
-        boxAt(leaf, 5, 5, DOOR_HEIGHT - 2, side * (leafWidth - 2.5), 0, 1, doorColor, 1, 0, 'wood');
-        boxAt(leaf, leafWidth - 1, 5, 6, (side * leafWidth) / 2, 0, 1, doorColor, 1, 0, 'wood');
-        boxAt(leaf, leafWidth - 1, 5, 6, (side * leafWidth) / 2, 0, DOOR_HEIGHT - 7, doorColor, 1, 0, 'wood');
-        // Puxador barra curto.
-        boxAt(leaf, 2, 4, 30, side * (leafWidth - 10), 0, 90, '#8a867d');
-      } else {
-        boxAt(leaf, leafWidth - 1, 4, DOOR_HEIGHT - 2, (side * leafWidth) / 2, 0, 1, doorColor, 1, 0, 'wood');
-        if (isPivotante) {
-          boxAt(leaf, 2.5, 3, 60, side * (leafWidth - 10), 0, 100, '#8a867d');
-        } else {
-          boxAt(leaf, 2, 6, 6, side * (leafWidth - 10), 0, 100, '#8a867d');
-        }
-      }
-    }
+    // Pacote de porta sem model.ts: mantém uma folha lisa em vez de deixar o vão vazio.
+    boxAt(frame, width - 1, 4, height - 2, 0, 0, 1, opening.color ?? DEFAULT_DOOR_COLOR, 1, 0, 'wood');
     return;
   }
 
@@ -164,6 +126,8 @@ export function buildWalls(plan: Plan): THREE.Group {
     const thickness = Math.max(4, wall.thickness);
     const openings = plan.openings.filter((o) => o.wallId === wall.id);
     const colors = wallFaceColors(wall);
+    const leftWallpaper = getWallpaper(wall.wallpaperLeft);
+    const rightWallpaper = getWallpaper(wall.wallpaperRight);
 
     const segment = (start: number, end: number, base: number, height: number): void => {
       if (end - start < 1 || height < 1) return;
@@ -171,11 +135,16 @@ export function buildWalls(plan: Plan): THREE.Group {
       const x = wall.a.x + ux * dist;
       const z = wall.a.y + uy * dist;
       const mesh = boxAt(group, end - start, thickness, height, x, z, base, colors.right, 1, -angle, 'wallPaint');
-      const left = material(colors.left, 1, 'wallPaint');
-      const right = material(colors.right, 1, 'wallPaint');
+      const left = leftWallpaper
+        ? wallpaperMaterial(leftWallpaper, end - start, height, start, base, true)
+        : material(colors.left, 1, 'wallPaint');
+      const right = rightWallpaper
+        ? wallpaperMaterial(rightWallpaper, end - start, height, start, base)
+        : material(colors.right, 1, 'wallPaint');
+      const edge = material(colors.right, 1, 'wallPaint');
       const top = material(wall.color ?? colors.right, 1, 'wallPaint');
       // BoxGeometry: +Z é a face direita e -Z a face esquerda ao seguir A → B.
-      mesh.material = [right, right, top, top, right, left];
+      mesh.material = [edge, edge, top, top, right, left];
     };
 
     /** O rodapé só existe no lado da parede que dá para um cômodo ou piso manual. */

@@ -76,7 +76,7 @@ export function attachPaletteDrop(
       const width = Math.max(1, Math.min(def.opening.width, near.length - 10));
       const half = width / 2;
       const offset = Math.max(half, Math.min(near.length - half, Math.round(near.offset / 5) * 5));
-      store.insertOpening(near.wall, offset, def.opening.kind, width);
+      store.insertOpening(near.wall, offset, def.opening.kind, width, def.id);
       return;
     }
     store.insertItem(defId, world.x, world.y);

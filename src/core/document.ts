@@ -2,7 +2,9 @@
 import type { Rect, Vec2 } from './geometry';
 import { boundsOfPoints, obbCorners, polygonArea, unionRect } from './geometry';
 import { uid } from './ids';
+import { getWallpaper } from './wallpapers';
 import { createItem, getDef } from '../catalog/registry';
+import { inferredOpeningDefId, resolveOpeningDefId } from '../catalog/openingDefs';
 
 export type Id = string;
 
@@ -26,6 +28,10 @@ export interface Wall {
   colorLeft?: string;
   /** Cor da face à direita ao seguir a direção de a para b. */
   colorRight?: string;
+  /** Papel de parede da face esquerda; ausente usa a cor lisa. */
+  wallpaperLeft?: string;
+  /** Papel de parede da face direita; ausente usa a cor lisa. */
+  wallpaperRight?: string;
 }
 
 /** Acabamento padrão das paredes. */
@@ -63,6 +69,8 @@ export interface Opening {
   offset: number;
   width: number;
   kind: OpeningKind;
+  /** pacote de origem; define o modelo 3D da folha */
+  defId?: string;
   /** inverte o lado de abertura */
   flip: boolean;
   /** lado da dobradiça quando aplicável */
@@ -289,6 +297,8 @@ export function normalizePlan(raw: unknown): Plan {
             color: typeof w.color === 'string' && w.color ? w.color : undefined,
             colorLeft: typeof w.colorLeft === 'string' && w.colorLeft ? w.colorLeft : undefined,
             colorRight: typeof w.colorRight === 'string' && w.colorRight ? w.colorRight : undefined,
+            wallpaperLeft: getWallpaper(w.wallpaperLeft)?.id,
+            wallpaperRight: getWallpaper(w.wallpaperRight)?.id,
           }))
       : [],
     openings: [],
@@ -333,16 +343,21 @@ export function normalizePlan(raw: unknown): Plan {
   plan.openings = Array.isArray(data.openings)
     ? data.openings
         .filter((o): o is Opening => !!o && wallIds.has(o.wallId))
-        .map((o) => ({
-          id: o.id ?? uid('op'),
-          wallId: o.wallId,
-          offset: Number(o.offset) || 0,
-          width: Math.max(20, Number(o.width) || 90),
-          kind: o.kind ?? 'porta',
-          flip: !!o.flip,
-          hinge: o.hinge === 'dir' ? 'dir' : 'esq',
-          color: typeof o.color === 'string' && o.color ? o.color : undefined,
-        }))
+        .map((o) => {
+          const kind = o.kind ?? 'porta';
+          const width = Math.max(20, Number(o.width) || 90);
+          return {
+            id: o.id ?? uid('op'),
+            wallId: o.wallId,
+            offset: Number(o.offset) || 0,
+            width,
+            kind,
+            defId: resolveOpeningDefId(kind, width, o.defId),
+            flip: !!o.flip,
+            hinge: o.hinge === 'dir' ? 'dir' : 'esq',
+            color: typeof o.color === 'string' && o.color ? o.color : undefined,
+          };
+        })
     : [];
   return plan;
 }
@@ -462,7 +477,17 @@ export function examplePlan(): Plan {
     width: number,
     kind: OpeningKind,
     extra: Partial<Opening> = {},
-  ): Opening => ({ id: uid('op'), wallId, offset, width, kind, flip: false, hinge: 'esq', ...extra });
+  ): Opening => ({
+    id: uid('op'),
+    wallId,
+    offset,
+    width,
+    kind,
+    defId: inferredOpeningDefId(kind, width),
+    flip: false,
+    hinge: 'esq',
+    ...extra,
+  });
 
   plan.openings = [
     op('wl_esq', 250, 100, 'porta'),

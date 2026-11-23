@@ -1,6 +1,8 @@
 /** Paredes desenhadas como blocos com os vãos das aberturas. */
 import type { Plan, Wall } from '../../core/document';
 import { wallFaceColors, wallParts } from '../../core/document';
+import { getWallpaper } from '../../core/wallpapers';
+import { paintWallpaperRect } from '../wallpaper';
 import type { Camera } from '../viewport';
 
 export interface WallFrame {
@@ -29,27 +31,44 @@ export function drawWalls(
     if (frame.length < 0.5) continue;
     const parts = wallParts(wall, plan.openings);
     const colors = wallFaceColors(wall);
+    const leftWallpaper = getWallpaper(wall.wallpaperLeft);
+    const rightWallpaper = getWallpaper(wall.wallpaperRight);
+    const radius = wall.thickness / 2;
     ctx.save();
     ctx.translate(wall.a.x, wall.a.y);
     ctx.rotate(frame.angle);
     for (const [start, end] of parts) {
       if (end - start <= 0.4) continue;
-      ctx.fillStyle = colors.left;
-      ctx.fillRect(start, -wall.thickness / 2, end - start, wall.thickness / 2);
-      ctx.fillStyle = colors.right;
-      ctx.fillRect(start, 0, end - start, wall.thickness / 2);
+      if (leftWallpaper) {
+        paintWallpaperRect(ctx, leftWallpaper, colors.left, start, -radius, end - start, radius);
+      } else {
+        ctx.fillStyle = colors.left;
+        ctx.fillRect(start, -radius, end - start, radius);
+      }
+      if (rightWallpaper) {
+        paintWallpaperRect(ctx, rightWallpaper, colors.right, start, 0, end - start, radius);
+      } else {
+        ctx.fillStyle = colors.right;
+        ctx.fillRect(start, 0, end - start, radius);
+      }
     }
     if (parts.length) {
-      // Semicírculos mantêm as duas cores até as extremidades da parede.
+      // Semicírculos mantêm os dois acabamentos até as extremidades da parede.
       for (const x of [0, frame.length]) {
-        ctx.fillStyle = colors.left;
+        ctx.save();
         ctx.beginPath();
-        ctx.arc(x, 0, wall.thickness / 2, Math.PI, Math.PI * 2);
-        ctx.fill();
-        ctx.fillStyle = colors.right;
+        ctx.arc(x, 0, radius, Math.PI, Math.PI * 2);
+        ctx.closePath();
+        ctx.clip();
+        paintWallpaperRect(ctx, leftWallpaper, colors.left, x - radius, -radius, radius * 2, radius * 2);
+        ctx.restore();
+        ctx.save();
         ctx.beginPath();
-        ctx.arc(x, 0, wall.thickness / 2, 0, Math.PI);
-        ctx.fill();
+        ctx.arc(x, 0, radius, 0, Math.PI);
+        ctx.closePath();
+        ctx.clip();
+        paintWallpaperRect(ctx, rightWallpaper, colors.right, x - radius, 0, radius * 2, radius * 2);
+        ctx.restore();
       }
     }
     ctx.restore();

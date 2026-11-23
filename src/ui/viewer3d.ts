@@ -7,9 +7,10 @@ import { createView3D, type View3DHandle } from '../view3d/viewer';
 export interface Viewer3DOptions {
   shell: Shell;
   store: Store;
+  onExportGlb: () => Promise<void> | void;
 }
 
-export function open3DViewer({ shell, store }: Viewer3DOptions): void {
+export function open3DViewer({ shell, store, onExportGlb }: Viewer3DOptions): void {
   if (shell.stage.querySelector('.viewer3d')) return;
 
   const host = el('div', { class: 'viewer3d-canvas-host' });
@@ -40,6 +41,29 @@ export function open3DViewer({ shell, store }: Viewer3DOptions): void {
     disabled: true,
     onClick: () => view?.fit(),
   });
+  let exporting = false;
+  const glbButton = button({
+    label: 'GLB',
+    icon: 'download',
+    title: 'Exportar modelo 3D (.glb) para Blender ou Godot',
+    onClick: () => {
+      void exportGlb();
+    },
+  });
+
+  async function exportGlb(): Promise<void> {
+    if (exporting) return;
+    exporting = true;
+    glbButton.disabled = true;
+    try {
+      await onExportGlb();
+    } catch (error) {
+      console.error('Falha ao exportar o modelo GLB', error);
+    } finally {
+      exporting = false;
+      glbButton.disabled = false;
+    }
+  }
   let qualityOn = false;
   const qualityButton = button({
     label: 'Alta qualidade',
@@ -58,7 +82,7 @@ export function open3DViewer({ shell, store }: Viewer3DOptions): void {
     'div',
     { class: 'viewer3d-head' },
     title,
-    el('div', { class: 'viewer3d-actions' }, wallsButton, fitButton, qualityButton, closeButton),
+    el('div', { class: 'viewer3d-actions' }, wallsButton, fitButton, glbButton, qualityButton, closeButton),
   );
 
   const hint = el(

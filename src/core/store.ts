@@ -9,6 +9,7 @@ import { Signal } from './emitter';
 import { itemBounds } from './document';
 import { boundsOfPoints, obbCorners, unionRect } from './geometry';
 import { createItem, getDef } from '../catalog/registry';
+import { openingDefIdForKind } from '../catalog/openingDefs';
 
 export type ToolId = 'select' | 'wall' | 'door' | 'window' | 'measure' | 'calibrate';
 
@@ -279,7 +280,13 @@ export class Store {
     return item;
   }
 
-  insertOpening(wall: Wall, offset: number, kind: Opening['kind'], width: number): Opening {
+  insertOpening(
+    wall: Wall,
+    offset: number,
+    kind: Opening['kind'],
+    width: number,
+    defId = openingDefIdForKind(kind),
+  ): Opening {
     const len = Math.hypot(wall.b.x - wall.a.x, wall.b.y - wall.a.y);
     const safeWidth = Math.min(Math.max(10, width), Math.max(len, 1));
     const half = safeWidth / 2;
@@ -289,6 +296,7 @@ export class Store {
       offset: Math.min(Math.max(offset, half), Math.max(half, len - half)),
       width: safeWidth,
       kind,
+      defId,
       flip: false,
       hinge: 'esq',
     };

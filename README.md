@@ -15,7 +15,7 @@ Editor de plantas baixas em vista de cima para uso pessoal: desenhe paredes e c�
 - **Pacotes de móveis** — cada peça vive em `src/furniture/<id>/` com `definition.ts` (metadados + desenho 2D) e `model.ts` (3D, opcional); o contrato para gerar peças com IA está em [MODELO-3D-SPEC.md](MODELO-3D-SPEC.md).
 - **Imagem de fundo** — sobreponha um PDF/print de planta existente, com calibração de escala entre dois pontos clicados.
 - **Quantitativos** — áreas de piso por ambiente, área de parede, rodapé, aberturas e contagem de móveis.
-- **Exportação** — PDF (planta 2D + vista 3D, ou só um dos dois), PNG (inclusive com fundo transparente), CSV de quantitativos e JSON da planta.
+- **Exportação** — PDF (planta 2D + vista 3D, ou só um dos dois), PNG (inclusive com fundo transparente), GLB 3D para Blender/Godot, CSV de quantitativos e JSON da planta.
 - **Projetos** — vários projetos salvos no navegador, com salvamento automático, desfazer/refazer (80 passos) e importação/exportação de JSON.
 - **Atalhos de teclado** — `V` selecionar, `P` parede, `C` cômodo, `T` porta, `J` janela, `M` medir, `3` vista 3D, `R` girar 90°, `Del` excluir, `Ctrl+Z`/`Ctrl+Shift+Z` desfazer/refazer, `Ctrl+D` duplicar, `Ctrl+C`/`Ctrl+V` copiar/colar, `Ctrl+0` enquadrar, `G` grade, `S` encaixe, `I` cotas, `L` travar, `Espaço`/botão direito para navegar. A lista completa está no botão **?** do app.
 
@@ -41,7 +41,7 @@ Scripts disponíveis:
 | --- | --- |
 | `npm run dev` | Servidor de desenvolvimento do Vite com hot reload. |
 | `npm run build` | Checagem de tipos (`tsc --noEmit`), build do Vite e empacotamento em `dist/index.html` autocontido. |
-| `npm run build:web` | Igual ao anterior, mas sem o empacotamento: deixa `dist/` com os arquivos separados (JS e CSS). |
+| `npm run build:web` | Gera a versão web em `dist-web/`, com JS e CSS separados, sem alterar o `dist/index.html` autocontido. |
 | `npm run preview` | Serve o `dist/` localmente para conferir o build. |
 | `npm run typecheck` | Só a checagem de tipos. |
 
@@ -53,7 +53,16 @@ npm run build
 
 O resultado é **`dist/index.html`**, um único arquivo com HTML, CSS e JavaScript embutidos (script `scripts/inline-dist.mjs`). Ele pode ser aberto com duplo clique (`file://`), copiado para um pendrive ou enviado por e-mail — não precisa de servidor nem de internet.
 
-> Abrir o `index.html` da raiz pelo disco não funciona: ele é a entrada de desenvolvimento do Vite. Use `dist/index.html` ou o servidor de desenvolvimento.
+> Abrir o `index.html` da raiz pelo disco redireciona automaticamente para `dist/index.html` (é preciso ter rodado `npm run build`). No servidor de desenvolvimento, ele continua sendo a entrada do Vite.
+
+## Exportar para Blender ou Godot
+
+Use **Exportar → Modelo 3D · GLB (Blender/Godot)** ou o botão **GLB** no cabeçalho da vista 3D. O arquivo `.glb` inclui paredes, pisos, aberturas, móveis, materiais e texturas embutidas, já convertido para metros.
+
+- **Blender:** `File → Import → glTF 2.0 (.glb/.gltf)`.
+- **Godot 4:** arraste o `.glb` para o projeto.
+
+A cena vem organizada em três grupos: **Paredes** (com portas e janelas), **Pisos** e **Móveis** — cada móvel com o nome da definição. O arquivo não inclui teto, telhado, câmera nem luzes: adicione esses elementos no programa de destino. O relevo fino (bump) vai pela extensão `EXT_materials_bump`, que nem todo programa importa — onde não houver suporte, a superfície aparece lisa. Portas e janelas saem na posição em que aparecem na vista 3D.
 
 ## Publicação (GitHub Pages)
 
@@ -77,7 +86,7 @@ src/
   interaction/        ponteiro, ferramentas (parede, cômodo, abertura, medir), mover, redimensionar, girar, encaixe, teclado
   view3d/             vista 3D em three.js: arquitetura, móveis, materiais, texturas, previews e snapshot (descobre os model.ts dos pacotes)
   ui/                 barra de ferramentas, catálogo, inspetor, diálogos, status bar, toasts
-  export/             PNG, PDF (gerado à mão, sem dependências), CSV e JSON
+  export/             PNG, PDF (gerado à mão, sem dependências), GLB, CSV e JSON
   styles/             tokens, layout e componentes em CSS
 ```
 

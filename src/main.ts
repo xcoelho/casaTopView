@@ -35,6 +35,7 @@ import { fmtLength, parseNumber } from './core/units';
 import type { Vec2 } from './core/geometry';
 import { exportPlanPNG } from './export/png';
 import { exportPlanPdf, type PdfMode } from './export/pdf';
+import { exportPlanGLB } from './export/glb';
 import { downloadPlanJSON, pickPlanJSON } from './export/json';
 
 const mount = document.getElementById('app');
@@ -167,8 +168,26 @@ async function importJson(): Promise<void> {
   notify(`Planta importada: ${plan.name}`, 'accent');
 }
 
+let exportingGlb = false;
+
+async function exportGlb(): Promise<void> {
+  if (exportingGlb) return;
+  exportingGlb = true;
+  notify('Gerando modelo 3D…');
+  try {
+    const ok = await exportPlanGLB(store.doc);
+    if (ok) notify('Modelo GLB exportado', 'accent');
+    else notify('A planta está vazia — adicione paredes, pisos ou móveis');
+  } catch (error) {
+    console.error('Falha ao exportar o modelo GLB', error);
+    notify('Não foi possível gerar o arquivo GLB');
+  } finally {
+    exportingGlb = false;
+  }
+}
+
 function open3D(): void {
-  open3DViewer({ shell, store });
+  open3DViewer({ shell, store, onExportGlb: exportGlb });
 }
 
 function openProjects(): void {
@@ -198,6 +217,9 @@ const toolbar = mountToolbar(shell, {
       if (ok) notify('PDF exportado', 'accent');
       else notify('Não foi possível gerar o PDF — verifique a planta e o suporte a WebGL');
     }, 40);
+  },
+  onExportGlb: () => {
+    void exportGlb();
   },
   onExportJson: () => {
     downloadPlanJSON(store.doc);

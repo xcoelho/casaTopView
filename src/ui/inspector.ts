@@ -3,11 +3,15 @@ import { BACKGROUND_COLORS, DEFAULT_DOOR_COLOR, DOOR_COLORS, FLOORS, wallFaceCol
 import type { Item, Opening, Room, Wall } from '../core/document';
 import { roomAreaCm2 } from '../core/document';
 import { getDef } from '../catalog/registry';
+import { openingDefIdForKind } from '../catalog/openingDefs';
 import { PALETTES } from '../catalog/draw';
 import type { SwatchOption } from '../catalog/draw';
+import { getWallpaper, WALLPAPERS } from '../core/wallpapers';
+import type { WallpaperPreset } from '../core/wallpapers';
 import { fmtArea, fmtLength } from '../core/units';
 import type { Store } from '../core/store';
 import { itemThumb } from '../render/thumbnail';
+import { createWallpaperSwatch } from '../render/wallpaper';
 import { createItemPreview } from '../view3d/preview';
 import { isElevatable, itemElevation, maxElevation } from '../view3d/furniture';
 import { setWallLength, wallLength } from '../interaction/wallResize';
@@ -34,6 +38,39 @@ export interface InspectorDeps {
 
 export interface InspectorHandle {
   update: () => void;
+}
+
+function wallpaperCard(
+  preset: WallpaperPreset | null,
+  active: boolean,
+  fallback: string,
+  onSelect: (id: string | null) => void,
+): HTMLButtonElement {
+  const card = el('button', {
+    class: `wallpaper-card${active ? ' active' : ''}`,
+    type: 'button',
+    title: preset ? `${preset.name} — ${preset.note}` : 'Pintura lisa — usar a cor da face',
+  }, createWallpaperSwatch(preset, fallback), el('span', { class: 'wallpaper-name' }, preset?.name ?? 'Pintura lisa'));
+  card.addEventListener('click', () => {
+    // Solta o foco para o inspetor poder trocar entre papel e pintura lisa.
+    card.blur();
+    onSelect(preset?.id ?? null);
+  });
+  return card;
+}
+
+function wallpaperField(
+  label: string,
+  selectedId: string,
+  fallback: string,
+  onSelect: (id: string | null) => void,
+): HTMLElement {
+  const grid = el('div', { class: 'wallpaper-grid' });
+  grid.append(wallpaperCard(null, !selectedId, fallback, onSelect));
+  for (const preset of WALLPAPERS) {
+    grid.append(wallpaperCard(preset, selectedId === preset.id, fallback, onSelect));
+  }
+  return el('div', { class: 'field' }, el('span', { class: 'swatch-label' }, label), grid);
 }
 
 export function mountInspector(shell: Shell, deps: InspectorDeps): InspectorHandle {
@@ -266,6 +303,8 @@ export function mountInspector(shell: Shell, deps: InspectorDeps): InspectorHand
     const angle = (Math.atan2(wall.b.y - wall.a.y, wall.b.x - wall.a.x) * 180) / Math.PI;
     const openings = store.doc.openings.filter((o) => o.wallId === wall.id);
     const colors = wallFaceColors(wall);
+    const leftWallpaper = getWallpaper(wall.wallpaperLeft);
+    const rightWallpaper = getWallpaper(wall.wallpaperRight);
     return [
       section(
         'Parede',
@@ -293,16 +332,6 @@ export function mountInspector(shell: Shell, deps: InspectorDeps): InspectorHand
             }),
         }),
         readOnlyRow('Aberturas', String(openings.length)),
-        swatchField('Face esquerda (A → B)', WALL_COLORS, colors.left, (value) =>
-          store.tx('Cor da face esquerda', () => {
-            wall.colorLeft = value;
-          }),
-        ),
-        swatchField('Face direita (A → B)', WALL_COLORS, colors.right, (value) =>
-          store.tx('Cor da face direita', () => {
-            wall.colorRight = value;
-          }),
-        ),
         el(
           'div',
           { class: 'row-actions' },
@@ -313,6 +342,42 @@ export function mountInspector(shell: Shell, deps: InspectorDeps): InspectorHand
             onClick: () => store.removeById(wall.id),
           }),
         ),
+      ),
+      section(
+        'Papel de parede',
+        el(
+          'p',
+          { class: 'wallpaper-intro' },
+          'Escolha um modelo por face. O padrão repete em escala real na vista 3D.',
+        ),
+        wallpaperField('Face esquerda (A → B)', leftWallpaper?.id ?? '', colors.left, (id) =>
+          store.tx('Papel de parede', () => {
+            wall.wallpaperLeft = id ?? undefined;
+          }),
+        ),
+        ...(leftWallpaper
+          ? []
+          : [
+              swatchField('Cor da face esquerda', WALL_COLORS, colors.left, (value) =>
+                store.tx('Cor da face esquerda', () => {
+                  wall.colorLeft = value;
+                }),
+              ),
+            ]),
+        wallpaperField('Face direita (A → B)', rightWallpaper?.id ?? '', colors.right, (id) =>
+          store.tx('Papel de parede', () => {
+            wall.wallpaperRight = id ?? undefined;
+          }),
+        ),
+        ...(rightWallpaper
+          ? []
+          : [
+              swatchField('Cor da face direita', WALL_COLORS, colors.right, (value) =>
+                store.tx('Cor da face direita', () => {
+                  wall.colorRight = value;
+                }),
+              ),
+            ]),
       ),
     ];
   }
@@ -338,6 +403,7 @@ export function mountInspector(shell: Shell, deps: InspectorDeps): InspectorHand
           onChange: (value) =>
             store.tx('Tipo de abertura', () => {
               opening.kind = value as Opening['kind'];
+              opening.defId = openingDefIdForKind(opening.kind);
             }),
         }),
         ...(opening.kind.startsWith('porta')

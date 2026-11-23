@@ -1,8 +1,10 @@
-/** Descobre modelos 3D que acompanham cada pacote de móvel. */
-import type { FurnitureModelModule } from './modelApi';
+/** Descobre modelos 3D que acompanham cada pacote de móvel ou abertura. */
+import type { FurnitureModelModule, OpeningModelModule } from './modelApi';
 
-const modules = import.meta.glob<FurnitureModelModule>('../furniture/*/model.ts', { eager: true });
-const byId = new Map<string, FurnitureModelModule>();
+type LoadedModel = FurnitureModelModule & OpeningModelModule;
+
+const modules = import.meta.glob<LoadedModel>('../furniture/*/model.ts', { eager: true });
+const byId = new Map<string, LoadedModel>();
 for (const [file, model] of Object.entries(modules)) {
   const id = model.modelId?.trim();
   if (!id) throw new Error('Modelo 3D sem modelId: ' + file);
@@ -18,4 +20,9 @@ for (const [file, model] of Object.entries(modules)) {
 
 export function getFurnitureModel(id: string): FurnitureModelModule | undefined {
   return byId.get(id);
+}
+
+export function getOpeningModel(id: string): OpeningModelModule | undefined {
+  const model = byId.get(id);
+  return model?.buildOpening ? model : undefined;
 }

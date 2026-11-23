@@ -11,6 +11,7 @@ export interface ToolbarDeps {
   onOpenHelp: () => void;
   onExportPng: (transparent: boolean) => void;
   onExportPdf: (mode: PdfMode) => void;
+  onExportGlb: () => void;
   onExportJson: () => void;
   onImportJson: () => void;
   onOpen3D: () => void;
@@ -83,6 +84,12 @@ export function mountToolbar(shell: Shell, deps: ToolbarDeps): ToolbarHandle {
           { label: 'PDF · planta 2D + vista 3D', icon: 'file', onClick: () => deps.onExportPdf('both') },
           { label: 'PDF · só a planta 2D', icon: 'image', onClick: () => deps.onExportPdf('plan') },
           { label: 'PDF · só a vista 3D', icon: 'cube', onClick: () => deps.onExportPdf('view3d') },
+          {
+            label: 'Modelo 3D · GLB (Blender/Godot)',
+            icon: 'cube',
+            separatorBefore: true,
+            onClick: () => deps.onExportGlb(),
+          },
           { label: 'Imagem PNG', icon: 'image', separatorBefore: true, onClick: () => deps.onExportPng(false) },
           { label: 'PNG com fundo transparente', icon: 'image', onClick: () => deps.onExportPng(true) },
           {
