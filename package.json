@@ -5,9 +5,10 @@
   "type": "module",
   "description": "Editor de plantas baixas em vista de cima",
   "scripts": {
-    "dev": "vite",
-    "build": "tsc --noEmit && vite build && node scripts/inline-dist.mjs",
-    "build:web": "tsc --noEmit && vite build --outDir dist-web",
+    "dev": "npm run build:client && vite",
+    "build:client": "vite build --config vite.client.config.ts",
+    "build": "npm run build:client && tsc --noEmit && vite build && node scripts/inline-dist.mjs",
+    "build:web": "npm run build:client && tsc --noEmit && vite build --outDir dist-web",
     "preview": "vite preview",
     "typecheck": "tsc --noEmit"
   },

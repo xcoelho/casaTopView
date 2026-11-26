@@ -7,6 +7,7 @@ import { floorKeyForPisoDef } from '../catalog/floors';
 import { buildFloors, buildWalls } from '../view3d/architecture';
 import { buildFurniture } from '../view3d/furniture';
 import { planFileSlug } from './png';
+import { hasPlanContent } from './planContent';
 
 /** O glTF usa metros; o editor trabalha em centímetros. */
 const GLB_SCALE = 0.01;
@@ -19,11 +20,7 @@ const MAX_TEXTURE_SIZE = 1024;
  * qualquer elemento de interface: o programa de destino cuida da iluminação.
  */
 export function buildGlbScene(plan: Plan): THREE.Group | null {
-  const hasContent =
-    plan.walls.length > 0 ||
-    plan.rooms.length > 0 ||
-    plan.items.some((item) => !item.hidden);
-  if (!hasContent) return null;
+  if (!hasPlanContent(plan)) return null;
 
   const root = new THREE.Group();
   root.name = plan.name || 'casaTopView';

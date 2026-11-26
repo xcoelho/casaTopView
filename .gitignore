@@ -1,6 +1,7 @@
 node_modules/
 dist/
 dist-web/
+.cache/
 .freebuff/
 *.rar
 *.log

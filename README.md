@@ -15,7 +15,7 @@ Editor de plantas baixas em vista de cima para uso pessoal: desenhe paredes e c�
 - **Pacotes de móveis** — cada peça vive em `src/furniture/<id>/` com `definition.ts` (metadados + desenho 2D) e `model.ts` (3D, opcional); o contrato para gerar peças com IA está em [MODELO-3D-SPEC.md](MODELO-3D-SPEC.md).
 - **Imagem de fundo** — sobreponha um PDF/print de planta existente, com calibração de escala entre dois pontos clicados.
 - **Quantitativos** — áreas de piso por ambiente, área de parede, rodapé, aberturas e contagem de móveis.
-- **Exportação** — PDF (planta 2D + vista 3D, ou só um dos dois), PNG (inclusive com fundo transparente), GLB 3D para Blender/Godot, CSV de quantitativos e JSON da planta.
+- **Exportação** — PDF (planta 2D + vista 3D, ou só um dos dois), PNG (inclusive com fundo transparente), GLB 3D para Blender/Godot, HTML da vista 3D para enviar ao cliente, CSV de quantitativos e JSON da planta.
 - **Projetos** — vários projetos salvos no navegador, com salvamento automático, desfazer/refazer (80 passos) e importação/exportação de JSON.
 - **Atalhos de teclado** — `V` selecionar, `P` parede, `C` cômodo, `T` porta, `J` janela, `M` medir, `3` vista 3D, `R` girar 90°, `Del` excluir, `Ctrl+Z`/`Ctrl+Shift+Z` desfazer/refazer, `Ctrl+D` duplicar, `Ctrl+C`/`Ctrl+V` copiar/colar, `Ctrl+0` enquadrar, `G` grade, `S` encaixe, `I` cotas, `L` travar, `Espaço`/botão direito para navegar. A lista completa está no botão **?** do app.
 
@@ -39,8 +39,9 @@ Scripts disponíveis:
 
 | Comando | O que faz |
 | --- | --- |
-| `npm run dev` | Servidor de desenvolvimento do Vite com hot reload. |
-| `npm run build` | Checagem de tipos (`tsc --noEmit`), build do Vite e empacotamento em `dist/index.html` autocontido. |
+| `npm run dev` | Gera o runtime do cliente (`build:client`) e sobe o servidor de desenvolvimento do Vite com hot reload. |
+| `npm run build:client` | Compila só o visualizador do cliente em `.cache/client/client.js` (usado pela exportação HTML e embutido no editor). |
+| `npm run build` | Runtime do cliente, checagem de tipos (`tsc --noEmit`), build do Vite e empacotamento em `dist/index.html` autocontido. |
 | `npm run build:web` | Gera a versão web em `dist-web/`, com JS e CSS separados, sem alterar o `dist/index.html` autocontido. |
 | `npm run preview` | Serve o `dist/` localmente para conferir o build. |
 | `npm run typecheck` | Só a checagem de tipos. |
@@ -64,6 +65,14 @@ Use **Exportar → Modelo 3D · GLB (Blender/Godot)** ou o botão **GLB** no cab
 
 A cena vem organizada em três grupos: **Paredes** (com portas e janelas), **Pisos** e **Móveis** — cada móvel com o nome da definição. O arquivo não inclui teto, telhado, câmera nem luzes: adicione esses elementos no programa de destino. O relevo fino (bump) vai pela extensão `EXT_materials_bump`, que nem todo programa importa — onde não houver suporte, a superfície aparece lisa. Portas e janelas saem na posição em que aparecem na vista 3D.
 
+## Enviar a visualização 3D para o cliente
+
+Use **Exportar → Visualização 3D para cliente (HTML)** ou o botão **Cliente** no cabeçalho da vista 3D. Sai um único arquivo `<projeto>-cliente.html` (cerca de 1 MB) para mandar por e-mail ou WhatsApp: abre com duplo clique, funciona offline e não precisa de servidor nem internet.
+
+O HTML traz a mesma maquete da vista 3D — paredes, pisos, aberturas, móveis, materiais e texturas — em modo **somente leitura**. O cliente pode girar (órbita), mover (pan) e dar zoom com mouse ou toque (pinça), além dos botões **Paredes** (mostrar/ocultar), **Enquadrar**, **Alta qualidade** (desligada por padrão) e **Tela cheia**. Não há barra do editor, seleção, arraste, inspetor, importação ou edição de qualquer tipo. A imagem de fundo (*underlay*) e os itens marcados como ocultos ficam de fora, e uma planta vazia não gera download (aparece um aviso).
+
+O visualizador é um runtime próprio, compilado por `npm run build:client` em `.cache/client/client.js` e embutido no editor. Como o `dist/index.html` é gerado automaticamente antes de cada publicação, não é preciso rodar nada à parte — mas, ao rodar o Vite direto, gere o runtime antes com `npm run build:client`.
+
 ## Publicação (GitHub Pages)
 
 O workflow [`.github/workflows/pages.yml`](.github/workflows/pages.yml) roda a cada push na branch `main`: instala as dependências com `npm ci`, roda `npm run build` e publica o conteúdo de `dist/` no GitHub Pages.
@@ -74,6 +83,7 @@ Para ativar na primeira vez, em **Settings → Pages**, defina **Source** como *
 
 ```
 index.html            entrada de desenvolvimento do Vite
+vite.client.config.ts build do visualizador do cliente (.cache/client/client.js)
 scripts/
   inline-dist.mjs     embute JS/CSS em dist/index.html (arquivo único)
 src/
@@ -85,8 +95,9 @@ src/
   render/             desenho 2D em canvas: camadas, viewport, tema, miniaturas
   interaction/        ponteiro, ferramentas (parede, cômodo, abertura, medir), mover, redimensionar, girar, encaixe, teclado
   view3d/             vista 3D em three.js: arquitetura, móveis, materiais, texturas, previews e snapshot (descobre os model.ts dos pacotes)
+  client/             visualizador somente leitura embutido no HTML exportado para o cliente
   ui/                 barra de ferramentas, catálogo, inspetor, diálogos, status bar, toasts
-  export/             PNG, PDF (gerado à mão, sem dependências), GLB, CSV e JSON
+  export/             PNG, PDF (gerado à mão, sem dependências), GLB, HTML do cliente, CSV e JSON
   styles/             tokens, layout e componentes em CSS
 ```
 

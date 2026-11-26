@@ -1,0 +1,113 @@
+/* Ajustes exclusivos da visualização enviada ao cliente. */
+
+.client-viewer {
+  background: #efeae0;
+}
+
+.client-viewer .viewer3d-title {
+  max-width: min(70vw, 520px);
+}
+
+.client-viewer .viewer3d-title > div {
+  min-width: 0;
+}
+
+.client-viewer .viewer3d-title b {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.client-viewer .viewer3d-hint {
+  bottom: max(14px, env(safe-area-inset-bottom));
+  max-width: calc(100vw - 32px);
+  white-space: normal;
+  text-align: center;
+}
+
+.client-loading {
+  position: absolute;
+  inset: 0;
+  z-index: 30;
+  display: grid;
+  place-content: center;
+  justify-items: center;
+  gap: 14px;
+  padding: 28px;
+  background: #efeae0;
+  color: var(--ink-soft);
+  text-align: center;
+  transition: opacity 260ms ease;
+}
+
+.client-loading p {
+  margin: 0;
+  font-size: 12.5px;
+}
+
+.client-loading.client-loading-done {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.client-spinner {
+  width: 28px;
+  height: 28px;
+  border: 2px solid var(--line-strong);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: client-spin 800ms linear infinite;
+}
+
+@keyframes client-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.client-loading.client-error {
+  color: var(--ink);
+}
+
+.client-loading.client-error .client-spinner {
+  display: none;
+}
+
+.client-error-mark {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: var(--danger-soft);
+  color: var(--danger);
+  font-size: 20px;
+  font-weight: 700;
+}
+
+.client-invalid {
+  display: grid;
+  place-items: center;
+  height: 100%;
+  padding: 24px;
+  color: var(--ink-soft);
+  text-align: center;
+}
+
+@media (max-width: 680px) {
+  .client-viewer .viewer3d-head {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+  }
+
+  .client-viewer .viewer3d-title {
+    align-self: flex-start;
+    max-width: calc(100vw - 24px);
+  }
+
+  .client-viewer .viewer3d-actions {
+    flex-wrap: wrap;
+    justify-content: flex-end;
+  }
+}

@@ -36,6 +36,7 @@ import type { Vec2 } from './core/geometry';
 import { exportPlanPNG } from './export/png';
 import { exportPlanPdf, type PdfMode } from './export/pdf';
 import { exportPlanGLB } from './export/glb';
+import { exportPlanClientHtml } from './export/clientHtml';
 import { downloadPlanJSON, pickPlanJSON } from './export/json';
 
 const mount = document.getElementById('app');
@@ -186,8 +187,30 @@ async function exportGlb(): Promise<void> {
   }
 }
 
+let exportingClientHtml = false;
+
+function exportClientHtml(): void {
+  if (exportingClientHtml) return;
+  exportingClientHtml = true;
+  try {
+    const ok = exportPlanClientHtml(store.doc);
+    if (ok) notify('Visualização para cliente exportada', 'accent');
+    else notify('A planta está vazia — adicione paredes, pisos ou móveis');
+  } catch (error) {
+    console.error('Falha ao gerar a visualização para cliente', error);
+    notify('Não foi possível gerar o HTML para o cliente');
+  } finally {
+    exportingClientHtml = false;
+  }
+}
+
 function open3D(): void {
-  open3DViewer({ shell, store, onExportGlb: exportGlb });
+  open3DViewer({
+    shell,
+    store,
+    onExportGlb: exportGlb,
+    onExportClientHtml: exportClientHtml,
+  });
 }
 
 function openProjects(): void {
@@ -221,6 +244,7 @@ const toolbar = mountToolbar(shell, {
   onExportGlb: () => {
     void exportGlb();
   },
+  onExportClientHtml: exportClientHtml,
   onExportJson: () => {
     downloadPlanJSON(store.doc);
     notify('Planta salva em JSON');

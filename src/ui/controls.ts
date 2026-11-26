@@ -29,6 +29,7 @@ const ICONS: Record<string, string> = {
   zoomIn: '<circle cx="11" cy="11" r="7"/><path d="M11 8v6M8 11h6M16.5 16.5 21 21"/>',
   zoomOut: '<circle cx="11" cy="11" r="7"/><path d="M8 11h6M16.5 16.5 21 21"/>',
   fit: '<path d="M9 4H4v5M15 4h5v5M15 20h5v-5M9 20H4v-5"/>',
+  expand: '<path d="M4 9V4h5M15 4h5v5M20 15v5h-5M9 20H4v-5"/>',
   close: '<path d="M6 6l12 12M18 6 6 18"/>',
   search: '<circle cx="11" cy="11" r="6.5"/><path d="m16 16 4.5 4.5"/>',
   copy: '<path d="M9 9h11v11H9z"/><path d="M15 5H4v11"/>',

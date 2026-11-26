@@ -31,12 +31,16 @@ const SHADOW_RADIUS_HQ = 5;
 export interface View3DHandle {
   update(plan: Plan): void;
   setWalls(visible: boolean): void;
-  setHighQuality(enabled: boolean): void;
+  setHighQuality(enabled: boolean): boolean;
   fit(): void;
   dispose(): void;
 }
 
-export function createView3D(container: HTMLElement, initial: Plan, store: Store): View3DHandle {
+export function createView3D(
+  container: HTMLElement,
+  initial: Plan,
+  store: Store | null = null,
+): View3DHandle {
   const renderer = new THREE.WebGLRenderer({ antialias: true });
   renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
   renderer.domElement.className = 'viewer3d-canvas';
@@ -143,7 +147,11 @@ export function createView3D(container: HTMLElement, initial: Plan, store: Store
     const bounds = planBounds(plan) ?? { x: -500, y: -350, w: 1000, h: 700 };
     const center = new THREE.Vector3(bounds.x + bounds.w / 2, 55, bounds.y + bounds.h / 2);
     const radius = Math.hypot(bounds.w, bounds.h) / 2 + 150;
-    const distance = (radius / Math.sin((camera.fov * DEG) / 2)) * 0.95;
+    // Em telas em retrato o campo horizontal é menor que o vertical: usa o menor
+    // para garantir que a casa inteira caiba sem cortar as laterais.
+    const vFov = camera.fov * DEG;
+    const hFov = 2 * Math.atan(Math.tan(vFov / 2) * Math.max(0.1, camera.aspect));
+    const distance = (radius / Math.sin(Math.min(vFov, hFov) / 2)) * 0.95;
     const direction = new THREE.Vector3(0.7, 1.1, 1).normalize();
 
     camera.position.copy(center).addScaledVector(direction, distance);
@@ -159,6 +167,15 @@ export function createView3D(container: HTMLElement, initial: Plan, store: Store
 
   let quality: QualityRenderer | null = null;
   let highQuality = false;
+  let qualityTimer = 0;
+
+  function buildQuality(): void {
+    quality?.dispose();
+    quality = null;
+    const width = Math.max(1, container.clientWidth);
+    const height = Math.max(1, container.clientHeight);
+    quality = createQualityRenderer(renderer, scene, camera, { width, height });
+  }
 
   function resize(): void {
     const width = Math.max(1, container.clientWidth);
@@ -166,7 +183,18 @@ export function createView3D(container: HTMLElement, initial: Plan, store: Store
     renderer.setSize(width, height, false);
     camera.aspect = width / height;
     camera.updateProjectionMatrix();
-    quality?.setSize(width, height);
+    // O EffectComposer pode deixar a cena em branco depois de mudar o tamanho
+    // (rotação do celular, janela redimensionada). Recria o pipeline quando o
+    // redimensionamento estabiliza; nesse intervalo o render direto assume.
+    quality?.dispose();
+    quality = null;
+    window.clearTimeout(qualityTimer);
+    if (highQuality) {
+      qualityTimer = window.setTimeout(() => {
+        if (!highQuality || quality) return;
+        buildQuality();
+      }, 180);
+    }
   }
 
   const observer = new ResizeObserver(resize);
@@ -175,6 +203,9 @@ export function createView3D(container: HTMLElement, initial: Plan, store: Store
 
   let raf = 0;
   let elevationGizmo: ElevationHandle | null = null;
+  let highlight: ReturnType<typeof attachSelectionHighlight> | null = null;
+  let disposeInteractions: (() => void) | null = null;
+
   function loop(): void {
     raf = requestAnimationFrame(loop);
     controls.update();
@@ -187,41 +218,55 @@ export function createView3D(container: HTMLElement, initial: Plan, store: Store
   resize();
   fit();
   loop();
-  const disposePicking = attachItemPicking({
-    canvas: renderer.domElement,
-    camera,
-    groups: () => groupsById,
-    store,
-  });
-  const highlight = attachSelectionHighlight({
-    scene,
-    groups: () => groupsById,
-    store,
-  });
-  const disposeFocus = attachItemFocus({
-    canvas: renderer.domElement,
-    camera,
-    controls,
-    groups: () => groupsById,
-    store,
-  });
-  const disposeDrag = attachItemDrag({
-    canvas: renderer.domElement,
-    camera,
-    controls,
-    groups: () => groupsById,
-    store,
-    highlight,
-  });
-  elevationGizmo = attachElevationHandle({
-    canvas: renderer.domElement,
-    camera,
-    scene,
-    controls,
-    groups: () => groupsById,
-    store,
-    highlight,
-  });
+
+  // Sem store (arquivo do cliente) a cena é somente leitura: nada de picking,
+  // arraste, seleção ou alças de altura.
+  if (store) {
+    const disposePicking = attachItemPicking({
+      canvas: renderer.domElement,
+      camera,
+      groups: () => groupsById,
+      store,
+    });
+    highlight = attachSelectionHighlight({
+      scene,
+      groups: () => groupsById,
+      store,
+    });
+    const selection = highlight;
+    const disposeFocus = attachItemFocus({
+      canvas: renderer.domElement,
+      camera,
+      controls,
+      groups: () => groupsById,
+      store,
+    });
+    const disposeDrag = attachItemDrag({
+      canvas: renderer.domElement,
+      camera,
+      controls,
+      groups: () => groupsById,
+      store,
+      highlight: selection,
+    });
+    elevationGizmo = attachElevationHandle({
+      canvas: renderer.domElement,
+      camera,
+      scene,
+      controls,
+      groups: () => groupsById,
+      store,
+      highlight: selection,
+    });
+    disposeInteractions = () => {
+      disposePicking();
+      selection.dispose();
+      disposeFocus();
+      disposeDrag();
+      elevationGizmo?.dispose();
+    };
+  }
+
   // Garante medidas corretas no primeiro frame, quando o painel acabou de entrar no DOM.
   requestAnimationFrame(() => {
     resize();
@@ -232,7 +277,7 @@ export function createView3D(container: HTMLElement, initial: Plan, store: Store
     update: (next) => {
       rebuild(next);
       // rebuild() recria os grupos: contorno e alça precisam reapontar para o novo grupo.
-      highlight.refresh();
+      highlight?.refresh();
       elevationGizmo?.refresh();
     },
     setWalls: (visible) => {
@@ -240,31 +285,29 @@ export function createView3D(container: HTMLElement, initial: Plan, store: Store
       if (walls) walls.visible = visible;
     },
     setHighQuality: (enabled) => {
+      window.clearTimeout(qualityTimer);
       if (enabled) {
-        if (!quality) {
-          const width = Math.max(1, container.clientWidth);
-          const height = Math.max(1, container.clientHeight);
-          quality = createQualityRenderer(renderer, scene, camera, { width, height });
-        }
+        if (!quality) buildQuality();
         highQuality = quality !== null;
       } else {
         highQuality = false;
+        quality?.dispose();
+        quality = null;
       }
 
       scene.environmentIntensity = highQuality ? ENV_INTENSITY_HQ : ENV_INTENSITY;
       renderer.toneMappingExposure = highQuality ? 0.96 : 0.98;
       setShadowQuality(highQuality);
+      // GPUs sem suporte ao composer caem para o render direto: informa o estado real.
+      return highQuality;
     },
     fit,
     dispose: () => {
       cancelAnimationFrame(raf);
+      window.clearTimeout(qualityTimer);
       observer.disconnect();
       window.removeEventListener('resize', resize);
-      disposePicking();
-      highlight.dispose();
-      disposeFocus();
-      disposeDrag();
-      elevationGizmo?.dispose();
+      disposeInteractions?.();
       quality?.dispose();
       controls.dispose();
       if (world) scene.remove(world);

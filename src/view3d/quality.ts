@@ -25,9 +25,6 @@ export interface QualityRenderer {
   dispose(): void;
 }
 
-/** Fator de supersampling: 1.25 já reduz o serrilhado; o SMAA cobre o resto. */
-const SUPERSAMPLE = 1.25;
-
 /** Raio do GTAO em centímetros (a cena é modelada em cm). */
 const GTAO_RADIUS = 24;
 const GTAO_THICKNESS = 10;
@@ -47,7 +44,10 @@ export function createQualityRenderer(
     return null;
   }
 
-  composer.setPixelRatio(Math.min(renderer.getPixelRatio() * SUPERSAMPLE, 2));
+  // Razão inteira: tamanhos fracionários nos alvos de pós-processamento deixam a
+  // tela em branco em alguns drivers (ex.: 390px * 1.25 = 487,5). O SMAA cobre o
+  // serrilhado que o antigo supersampling de 1,25 suavizava.
+  composer.setPixelRatio(Math.min(2, Math.max(1, Math.round(renderer.getPixelRatio()))));
 
   composer.addPass(new RenderPass(scene, camera));
 

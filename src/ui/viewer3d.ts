@@ -8,9 +8,15 @@ export interface Viewer3DOptions {
   shell: Shell;
   store: Store;
   onExportGlb: () => Promise<void> | void;
+  onExportClientHtml: () => Promise<void> | void;
 }
 
-export function open3DViewer({ shell, store, onExportGlb }: Viewer3DOptions): void {
+export function open3DViewer({
+  shell,
+  store,
+  onExportGlb,
+  onExportClientHtml,
+}: Viewer3DOptions): void {
   if (shell.stage.querySelector('.viewer3d')) return;
 
   const host = el('div', { class: 'viewer3d-canvas-host' });
@@ -64,6 +70,30 @@ export function open3DViewer({ shell, store, onExportGlb }: Viewer3DOptions): vo
       glbButton.disabled = false;
     }
   }
+
+  let exportingClient = false;
+  const clientButton = button({
+    label: 'Cliente',
+    icon: 'eye',
+    title: 'Exportar visualização 3D para cliente (.html)',
+    onClick: () => {
+      void exportClient();
+    },
+  });
+
+  async function exportClient(): Promise<void> {
+    if (exportingClient) return;
+    exportingClient = true;
+    clientButton.disabled = true;
+    try {
+      await onExportClientHtml();
+    } catch (error) {
+      console.error('Falha ao exportar a visualização para cliente', error);
+    } finally {
+      exportingClient = false;
+      clientButton.disabled = false;
+    }
+  }
   let qualityOn = false;
   const qualityButton = button({
     label: 'Alta qualidade',
@@ -72,8 +102,10 @@ export function open3DViewer({ shell, store, onExportGlb }: Viewer3DOptions): vo
     disabled: true,
     onClick: () => {
       qualityOn = !qualityOn;
-      qualityButton.classList.toggle('active', qualityOn);
-      view?.setHighQuality(qualityOn);
+      // GPU sem suporte ao composer mantém alta qualidade desligada: usa o estado real.
+      const active = view?.setHighQuality(qualityOn) ?? qualityOn;
+      qualityOn = active;
+      qualityButton.classList.toggle('active', active);
     },
   });
   const closeButton = button({ label: 'Fechar', icon: 'close', onClick: () => close() });
@@ -82,7 +114,16 @@ export function open3DViewer({ shell, store, onExportGlb }: Viewer3DOptions): vo
     'div',
     { class: 'viewer3d-head' },
     title,
-    el('div', { class: 'viewer3d-actions' }, wallsButton, fitButton, glbButton, qualityButton, closeButton),
+    el(
+      'div',
+      { class: 'viewer3d-actions' },
+      wallsButton,
+      fitButton,
+      glbButton,
+      clientButton,
+      qualityButton,
+      closeButton,
+    ),
   );
 
   const hint = el(

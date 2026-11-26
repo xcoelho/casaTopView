@@ -12,6 +12,7 @@ export interface ToolbarDeps {
   onExportPng: (transparent: boolean) => void;
   onExportPdf: (mode: PdfMode) => void;
   onExportGlb: () => void;
+  onExportClientHtml: () => void;
   onExportJson: () => void;
   onImportJson: () => void;
   onOpen3D: () => void;
@@ -89,6 +90,11 @@ export function mountToolbar(shell: Shell, deps: ToolbarDeps): ToolbarHandle {
             icon: 'cube',
             separatorBefore: true,
             onClick: () => deps.onExportGlb(),
+          },
+          {
+            label: 'Visualização 3D para cliente (HTML)',
+            icon: 'eye',
+            onClick: () => deps.onExportClientHtml(),
           },
           { label: 'Imagem PNG', icon: 'image', separatorBefore: true, onClick: () => deps.onExportPng(false) },
           { label: 'PNG com fundo transparente', icon: 'image', onClick: () => deps.onExportPng(true) },
